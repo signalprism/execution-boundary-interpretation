@@ -1,0 +1,23 @@
+name: "Execution Boundary Interpretation"
+description: "Deterministically interpret AI-generated mutations against declared intent at the execution boundary."
+author: "Signal & Prism"
+
+inputs:
+  intent_path:
+    description: "Path to INTENT.json containing declared mutation intent"
+    required: false
+    default: "INTENT.json"
+
+  fail_on:
+    description: "Comma-separated rule categories that should fail the build (e.g., scope,file_count,deletions,renames,moves)"
+    required: false
+    default: "scope,file_count,deletions"
+
+runs:
+  using: "node20"
+  main: "dist/index.js"
+
+branding:
+  icon: "shield"
+  color: "blue"
+  
