@@ -11,11 +11,25 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Skip until Node scaffold exists
+        run: |
+          if [ ! -f "package.json" ]; then
+            echo "package.json not found; skipping."
+            exit 0
+          fi
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
 
-      - run: npm ci
+      - name: Install deps
+        run: |
+          if [ -f "package-lock.json" ]; then
+            npm ci
+          else
+            npm install
+          fi
+
       - run: npm run package
 
       - name: Verify bundle
