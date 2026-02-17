@@ -55,3 +55,4 @@ Example INTENT.json
 Summary
 
 Declared intent → Actual diff → Deterministic boundary interpretation.
+// test change
