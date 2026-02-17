@@ -1,22 +1,8 @@
-name: Execution Boundary Interpretation
-
-on:
-  pull_request:
-
-permissions:
-  contents: read
-  pull-requests: read
-
-jobs:
-  interpret:
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Run Execution Boundary Interpretation
-        uses: ./
-        with:
-          intent_path: "INTENT.json"
-          fail_on: "scope,file_count,deletions,renames,moves"
+- name: Run Execution Boundary Interpretation
+  uses: ./
+  with:
+    intent_path: "INTENT.json"
+    fail_on: "scope,file_count,deletions,renames,moves"
+  env:
+    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
