@@ -56,3 +56,4 @@ Summary
 
 Declared intent → Actual diff → Deterministic boundary interpretation.
 // test change
+// retrigger
