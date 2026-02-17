@@ -7,7 +7,7 @@ type MutationClass = "patch" | "refactor" | "rename" | "delete";
 
 type Intent = {
   agent?: string;
-  scope: string[]; // allowed path prefixes
+  scope: string[];
   mutation_class: MutationClass;
   max_files: number;
   allow_deletions?: boolean;
@@ -17,12 +17,11 @@ type Intent = {
 
 type ChangedFile = {
   filename: string;
-  status: string; // added | modified | removed | renamed | ...
+  status: string;
   previous_filename?: string;
 };
 
 const INTENT_SCHEMA = {
-  $schema: "http://json-schema.org/draft-07/schema#",
   type: "object",
   required: ["scope", "mutation_class", "max_files"],
   additionalProperties: true,
@@ -31,11 +30,11 @@ const INTENT_SCHEMA = {
     scope: { type: "array", items: { type: "string" }, minItems: 1 },
     mutation_class: { type: "string", enum: ["patch", "refactor", "rename", "delete"] },
     max_files: { type: "integer", minimum: 1 },
-    allow_deletions: { type: "boolean", default: false },
-    allow_renames: { type: "boolean", default: false },
-    allow_moves: { type: "boolean", default: false }
+    allow_deletions: { type: "boolean" },
+    allow_renames: { type: "boolean" },
+    allow_moves: { type: "boolean" }
   }
-} as const;
+};
 
 function parseCsvSet(input: string | undefined): Set<string> {
   return new Set(
@@ -70,32 +69,30 @@ async function main() {
     const intentPath = core.getInput("intent_path") || "INTENT.json";
     const failOn = parseCsvSet(core.getInput("fail_on") || "scope,file_count,deletions");
 
-    // Ensure we're on a PR event
     const pr = github.context.payload.pull_request;
     if (!pr) {
       core.info("No pull_request in event payload. Skipping.");
       return;
     }
 
-    // Load intent
     if (!fs.existsSync(intentPath)) {
-      core.setFailed(`Intent file not found at ${intentPath}. Add it to the PR branch.`);
+      core.setFailed(`Intent file not found at ${intentPath}.`);
       return;
     }
 
-    let intentRaw: any;
+    let intentRaw: Record<string, any>;
     try {
-      intentRaw = JSON.parse(fs.readFileSync(intentPath, "utf8"));
-    } catch (e) {
-      core.setFailed(`Failed to parse ${intentPath} as JSON. Ensure valid JSON.`);
+      intentRaw = JSON.parse(fs.readFileSync(intentPath, "utf8")) as Record<string, any>;
+    } catch {
+      core.setFailed(`Failed to parse ${intentPath} as JSON.`);
       return;
     }
 
-    // Validate intent schema
     const ajv = new Ajv({ allErrors: true });
     const validate = ajv.compile(INTENT_SCHEMA);
 
-    if (!validate(intentRaw)) {
+    const valid = validate(intentRaw as any);
+    if (!valid) {
       core.setFailed(`Invalid INTENT.json schema: ${JSON.stringify(validate.errors)}`);
       return;
     }
@@ -112,7 +109,7 @@ async function main() {
 
     const token = process.env.GITHUB_TOKEN;
     if (!token) {
-      core.setFailed("GITHUB_TOKEN not available. Ensure workflow has permissions and runs in GitHub Actions.");
+      core.setFailed("GITHUB_TOKEN not available.");
       return;
     }
 
@@ -120,7 +117,6 @@ async function main() {
     const { owner, repo } = github.context.repo;
     const prNumber = pr.number;
 
-    // Fetch PR files (paginate)
     const files = await octokit.paginate(octokit.rest.pulls.listFiles, {
       owner,
       repo,
@@ -134,18 +130,17 @@ async function main() {
       previous_filename: f.previous_filename
     }));
 
-    // Evaluate deterministic rules
     const violations: { rule: string; message: string; items?: string[] }[] = [];
 
     // file_count
     if (changedFiles.length > intent.max_files) {
       violations.push({
         rule: "file_count",
-        message: `File count exceeded: ${changedFiles.length} > declared max ${intent.max_files}`
+        message: `File count exceeded: ${changedFiles.length} > ${intent.max_files}`
       });
     }
 
-    // scope (check new path; if renamed, check both old and new)
+    // scope
     const outOfScope = changedFiles.filter(f => {
       if (f.status === "renamed" && f.previous_filename) {
         return !inScope(intent.scope, f.filename) || !inScope(intent.scope, f.previous_filename);
@@ -174,8 +169,8 @@ async function main() {
     // renames
     const renames = changedFiles.filter(f => f.status === "renamed" && !!f.previous_filename);
     if (renames.length > 0) {
-      const renameAllowed = intent.allow_renames || intent.mutation_class === "rename";
-      if (!renameAllowed) {
+      const allowed = intent.allow_renames || intent.mutation_class === "rename";
+      if (!allowed) {
         violations.push({
           rule: "renames",
           message: "Renames detected but not declared.",
@@ -184,7 +179,7 @@ async function main() {
       }
     }
 
-    // moves (directory changes on renames)
+    // moves
     const moves = renames.filter(r => {
       const prevDir = dirPrefix(r.previous_filename!);
       const nextDir = dirPrefix(r.filename);
@@ -192,8 +187,8 @@ async function main() {
     });
 
     if (moves.length > 0) {
-      const moveAllowed = intent.allow_moves || intent.mutation_class === "rename";
-      if (!moveAllowed) {
+      const allowed = intent.allow_moves || intent.mutation_class === "rename";
+      if (!allowed) {
         violations.push({
           rule: "moves",
           message: "Moves detected but not declared.",
@@ -202,10 +197,10 @@ async function main() {
       }
     }
 
-    // Job Summary (interpretation output)
+    // Summary Output
     await core.summary
       .addHeading("Execution Boundary Interpretation")
-      .addParagraph("Declared intent interpreted against actual PR mutations.")
+      .addRaw("Declared intent interpreted against actual PR mutations.\n\n")
       .addHeading("Declared Intent")
       .addTable([
         [{ data: "Field", header: true }, { data: "Value", header: true }],
@@ -218,54 +213,46 @@ async function main() {
         ["allow_moves", String(!!intent.allow_moves)]
       ])
       .addHeading("Observed Mutations")
-      .addParagraph(`Changed files: ${changedFiles.length}`)
+      .addRaw(`Changed files: ${changedFiles.length}\n\n`)
       .addRaw(
         changedFiles
-          .map(f => {
-            const line =
-              f.status === "renamed" && f.previous_filename
-                ? `- [${f.status}] ${f.previous_filename} -> ${f.filename}`
-                : `- [${f.status}] ${f.filename}`;
-            return line;
-          })
+          .map(f =>
+            f.status === "renamed" && f.previous_filename
+              ? `- [${f.status}] ${f.previous_filename} -> ${f.filename}`
+              : `- [${f.status}] ${f.filename}`
+          )
           .join("\n") + "\n\n"
       )
       .addHeading("Boundary Interpretation");
 
     if (violations.length === 0) {
-      await core.summary.addParagraph("✅ No violations. Declared intent matches observed mutations.").write();
-      core.info("No violations. Execution boundary interpretation passed.");
+      await core.summary
+        .addRaw("✅ No violations. Declared intent matches observed mutations.\n\n")
+        .write();
       return;
     }
 
-    // Add violations to summary
     for (const v of violations) {
-      await core.summary.addHeading(`Violation: ${v.rule}`, 3).addParagraph(v.message);
+      await core.summary
+        .addHeading(`Violation: ${v.rule}`, 3)
+        .addRaw(`${v.message}\n\n`);
+
       if (v.items && v.items.length > 0) {
         await core.summary.addRaw(v.items.map(i => `- ${i}`).join("\n") + "\n\n");
       }
     }
+
     await core.summary.write();
 
-    // Decide whether to fail build based on fail_on
     const failing = violations.filter(v => failOn.has(v.rule));
     if (failing.length > 0) {
-      const msg =
+      core.setFailed(
         failing
-          .map(v => {
-            const items = v.items?.length ? `\n${v.items.map(i => `- ${i}`).join("\n")}` : "";
-            return `[${v.rule}] ${v.message}${items}`;
-          })
-          .join("\n\n") || "Boundary interpretation failed.";
-      core.setFailed(msg);
+          .map(v => `[${v.rule}] ${v.message}`)
+          .join("\n")
+      );
       return;
     }
-
-    // Otherwise warn only
-    for (const v of violations) {
-      core.warning(`[${v.rule}] ${v.message}${v.items?.length ? " " + v.items.join(", ") : ""}`);
-    }
-    core.info("Violations present but not configured to fail the build (fail_on).");
 
   } catch (err: any) {
     core.setFailed(err?.message ?? String(err));
