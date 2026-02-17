@@ -1,0 +1,9 @@
+{
+  "scope": ["src/"],
+  "mutation_class": "patch",
+  "max_files": 1,
+  "allow_deletions": false,
+  "allow_renames": false,
+  "allow_moves": false
+}
+
