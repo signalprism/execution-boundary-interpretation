@@ -42,6 +42,8 @@ This action interprets what happened against what was declared.
 
 If the declared execution boundary is exceeded, the PR fails.
 
+This is not a policy engine. It’s a deterministic boundary primitive for AI-driven pull requests.
+
 ---
 
 ## Installation
