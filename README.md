@@ -1,7 +1,7 @@
 
 # Execution Boundary Interpretation
 
-Deterministically interpret AI-generated code mutations at the pull request boundary.
+Deterministically interpret AI-generated pull request mutations against a declared execution boundary.
 
 This GitHub Action compares a declared `INTENT.json` against the actual PR diff and:
 
@@ -18,6 +18,14 @@ No runtime daemon.
 Just:
 
 Declared intent → Actual diff → Deterministic boundary interpretation.
+
+---
+
+### What You Get
+
+- Explicit blast-radius control for AI agents
+- Deterministic enforcement in CI
+- No external service or runtime dependency
 
 ---
 
