@@ -10,7 +10,7 @@ This GitHub Action evaluates a simple primitive:
 
 Add one workflow.
 
-Add one INTENT.json.
+Add one `INTENT.json`.
 
 The action evaluates whether a pull request stayed within the declared execution boundary — and fails the PR if it did not.
 
