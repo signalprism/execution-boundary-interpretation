@@ -1,3 +1,4 @@
+![CI](https://github.com/signalprism/execution-boundary-interpretation/actions/workflows/ci.yml/badge.svg)
 
 # Execution Boundary Interpretation
 
