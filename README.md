@@ -26,7 +26,7 @@ No SaaS.
 
 No prompt wrapping.
 
-Just deterministic enforcement at the pull request boundary.
+Deterministic enforcement at the pull request boundary.
 
 ---
 
@@ -43,7 +43,8 @@ Execution Boundary Interpretation evaluates declared authority against the actua
 If the declared execution boundary is exceeded, the PR fails.
 
 This is not a policy engine.
-It is a deterministic boundary primitive for AI-driven pull requests.
+
+It is a minimal boundary primitive for AI-driven pull requests.
 
 ---
 
