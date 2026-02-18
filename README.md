@@ -4,25 +4,14 @@
 
 Deterministically interpret AI-generated pull request mutations against a declared execution boundary.
 
-This GitHub Action compares a declared `INTENT.json` against the actual PR diff and:
+This GitHub Action evaluates a simple primitive:
 
-- Interprets side-effects
-- Detects scope violations
-- Detects excessive file mutations
-- Detects undeclared deletions, renames, and moves
-- Fails the PR when execution boundaries are exceeded
+  declared intent → actual PR diff → boundary interpretation
 
-No model inspection.  
-No prompt wrapping.  
-No runtime daemon.  
+Add one workflow.
+Add one INTENT.json.
 
-Just:
-
-Declared intent → Actual diff → Deterministic boundary interpretation.
-
-Execution Boundary Interpretation is a simple primitive: declared intent evaluated against actual PR mutations.
-
----
+The action evaluates whether a pull request stayed within the declared execution boundary — and fails the PR if it did not.
 
 ### What You Get
 
@@ -30,19 +19,28 @@ Execution Boundary Interpretation is a simple primitive: declared intent evaluat
 - Deterministic enforcement in CI
 - No external service or runtime dependency
 
+No runtime.
+No SaaS.
+No prompt wrapping.
+
+Just deterministic enforcement at the pull request boundary.
+
 ---
 
 ## Why This Exists
 
-AI agents can generate large or unintended code changes.
+AI agents now generate real pull requests in production repositories.
 
-Most systems log what happened.
+We typically review what changed.
 
-This action interprets what happened against what was declared.
+We rarely declare what the agent was authorized to change.
+
+Execution Boundary Interpretation evaluates declared authority against the actual PR diff.
 
 If the declared execution boundary is exceeded, the PR fails.
 
-This is not a policy engine. It’s a deterministic boundary primitive for AI-driven pull requests.
+This is not a policy engine.
+It is a deterministic boundary primitive for AI-driven pull requests.
 
 ---
 
