@@ -9,6 +9,7 @@ This GitHub Action evaluates a simple primitive:
   declared intent → actual PR diff → boundary interpretation
 
 Add one workflow.
+
 Add one INTENT.json.
 
 The action evaluates whether a pull request stayed within the declared execution boundary — and fails the PR if it did not.
@@ -20,7 +21,9 @@ The action evaluates whether a pull request stayed within the declared execution
 - No external service or runtime dependency
 
 No runtime.
+
 No SaaS.
+
 No prompt wrapping.
 
 Just deterministic enforcement at the pull request boundary.
