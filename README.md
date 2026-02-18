@@ -20,6 +20,8 @@ Just:
 
 Declared intent → Actual diff → Deterministic boundary interpretation.
 
+Execution Boundary Interpretation is a simple primitive: declared intent evaluated against actual PR mutations.
+
 ---
 
 ### What You Get
