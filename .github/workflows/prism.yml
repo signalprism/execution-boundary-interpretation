@@ -1,0 +1,19 @@
+name: Prism Gate
+
+on:
+  pull_request:
+
+jobs:
+  prism:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Prism Gate
+        uses: signalprism/execution-boundary-interpretation@v0.1.0
+        with:
+          intent_path: "INTENT.json"
+          registry_path: ".prism/surface_registry.yaml"
+          meaning_out_path: "meaning.json"
