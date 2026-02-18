@@ -1,1 +1,91 @@
-placeholder
+version: "0.1"
+
+authority_order:
+  - low
+  - medium
+  - high
+  - critical
+
+action_classes:
+
+  doc_change:
+    description: "Documentation-only edits."
+    min_authority: low
+    match:
+      any_paths:
+        - "**/*.md"
+        - "**/*.txt"
+        - "docs/**"
+
+  test_change:
+    description: "Tests and fixtures."
+    min_authority: low
+    match:
+      any_paths:
+        - "test/**"
+        - "tests/**"
+        - "**/*_test.*"
+
+  code_change:
+    description: "Source code changes."
+    min_authority: medium
+    match:
+      any_paths:
+        - "src/**"
+        - "lib/**"
+        - "app/**"
+        - "**/*.py"
+        - "**/*.ts"
+        - "**/*.js"
+        - "**/*.go"
+        - "**/*.java"
+
+  dependency_change:
+    description: "Dependency graph changes."
+    min_authority: high
+    match:
+      any_paths:
+        - "package.json"
+        - "package-lock.json"
+        - "pnpm-lock.yaml"
+        - "yarn.lock"
+        - "requirements.txt"
+        - "poetry.lock"
+        - "pyproject.toml"
+        - "go.mod"
+        - "go.sum"
+        - "pom.xml"
+
+  workflow_change:
+    description: "CI/CD or automation changes."
+    min_authority: high
+    match:
+      any_paths:
+        - ".github/workflows/**"
+        - ".gitlab-ci.yml"
+        - "azure-pipelines.yml"
+
+  secret_material:
+    description: "Potential credential or key material."
+    min_authority: critical
+    match:
+      any_extensions:
+        - ".pem"
+        - ".key"
+        - ".p12"
+        - ".pfx"
+      any_paths:
+        - ".env"
+        - "**/.env"
+        - "**/*secrets*"
+        - "**/*private*key*"
+
+  new_codebase:
+    description: "Repo genesis / mass introduction of files."
+    min_authority: high
+    match:
+      heuristics:
+        files_added_gte: 50
+        total_loc_added_gte: 2000
+        new_top_level_dirs_gte: 2
+
