@@ -71,7 +71,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Run Execution Boundary Interpretation
-        uses: signalprism/execution-boundary-interpretation@v0.1
+        uses: signalprism/execution-boundary-interpretation@v0.1.1
         with:
           intent_path: "INTENT.json"
           fail_on: "scope,file_count,deletions,renames,moves"
