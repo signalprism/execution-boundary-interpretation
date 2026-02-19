@@ -3,11 +3,22 @@ function normalizeSlashes(p) {
 }
 
 function globToRegExp(glob) {
-  let s = String(glob || "").replace(/[.+^${}()|[\]\\]/g, "\\$&");
-  s = s.replace(/\\\*\\\*/g, "§§DOUBLESTAR§§");
-  s = s.replace(/\\\*/g, "[^/]*");
-  s = s.replace(/§§DOUBLESTAR§§/g, ".*");
-  s = s.replace(/\\\?/g, "[^/]");
+  // Normalize
+  let s = String(glob || "").replace(/\\/g, "/");
+
+  // Escape regex special chars (but NOT glob tokens * and ? yet)
+  s = s.replace(/[.+^${}()|[\]\\]/g, "\\$&");
+
+  // Protect glob tokens in the right order
+  s = s.replace(/\*\*/g, "§§DOUBLESTAR§§");
+  s = s.replace(/\*/g, "§§SINGLESTAR§§");
+  s = s.replace(/\?/g, "§§QMARK§§");
+
+  // Expand tokens to regex
+  s = s.replace(/§§DOUBLESTAR§§/g, ".*");      // any chars, including /
+  s = s.replace(/§§SINGLESTAR§§/g, "[^/]*");   // any chars except /
+  s = s.replace(/§§QMARK§§/g, "[^/]");         // single char except /
+
   return new RegExp("^" + s + "$");
 }
 
