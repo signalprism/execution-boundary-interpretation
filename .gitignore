@@ -1,4 +1,5 @@
 node_modules/
-.envmeaning.json
 meaning.json
-/dist
+# prevent accidental root dist rebuild noise
+/dist/tmp
+

@@ -1,23 +1,26 @@
 name: "Execution Boundary Interpretation"
-description: "Deterministically interpret AI-generated mutations against declared intent at the execution boundary."
+description: "Deterministic intent + diff gate with Run 2 authority surfaces (bootstrap + normal)."
 author: "Signal & Prism"
-
 inputs:
   intent_path:
-    description: "Path to INTENT.json containing declared mutation intent"
+    description: "Path to INTENT.json"
     required: false
     default: "INTENT.json"
-
-  fail_on:
-    description: "Comma-separated rule categories that should fail the build (e.g., scope,file_count,deletions,renames,moves)"
+  registry_path:
+    description: "Path to surface_registry.yaml"
     required: false
-    default: "scope,file_count,deletions"
-
+    default: ".prism/surface_registry.yaml"
+  bootstrap_lock_path:
+    description: "Path to bootstrap lock file"
+    required: false
+    default: ".prism/bootstrap.lock"
+  meaning_out_path:
+    description: "Where to write meaning.json"
+    required: false
+    default: "meaning.json"
 runs:
   using: "node20"
   main: "dist/index.js"
-
 branding:
   icon: "shield"
   color: "blue"
-  
