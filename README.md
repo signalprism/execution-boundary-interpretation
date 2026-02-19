@@ -3,7 +3,6 @@
 [![Prism Gate](https://github.com/signalprism/execution-boundary-interpretation/actions/workflows/prism.yml/badge.svg)](https://github.com/signalprism/execution-boundary-interpretation/actions/workflows/prism.yml)
 [![Release](https://img.shields.io/github/v/release/signalprism/execution-boundary-interpretation)](https://github.com/signalprism/execution-boundary-interpretation/releases)
 
-Deterministic authority enforcement at the pull request boundary.
 
 Deterministic authority enforcement at the pull request boundary.
 
