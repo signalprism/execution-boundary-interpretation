@@ -1,6 +1,6 @@
 # Execution Boundary Interpretation
 
-Deterministic authority enforcement at the pull request boundary.
+Deterministic authority enforcement for AI-generated pull requests.
 
 [![Prism Gate](https://github.com/signalprism/execution-boundary-interpretation/actions/workflows/prism.yml/badge.svg)](https://github.com/signalprism/execution-boundary-interpretation/actions/workflows/prism.yml)
 ![Version](https://img.shields.io/badge/version-v0.1.3-blue)
