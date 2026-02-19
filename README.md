@@ -131,8 +131,8 @@ They do not inherently understand authority boundaries.
 
 Execution Boundary Interpretation introduces an explicit authority contract before merge.
 
-No SaaS.
-No runtime service
+No SaaS.\
+No runtime service.\
 No model inspection.
 
 Deterministic enforcement at the pull request boundary.
