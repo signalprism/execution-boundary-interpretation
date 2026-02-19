@@ -14,10 +14,6 @@ Execution Boundary Interpretation enforces both.
 
 ---
 
-## Core Primitive
-
-    declared authority → actual PR diff → deterministic boundary interpretation
-
 ------------------------------------------------------------------------
 
 ## Core Primitive
