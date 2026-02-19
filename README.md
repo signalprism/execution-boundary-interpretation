@@ -2,6 +2,30 @@
 
 Deterministic authority enforcement at the pull request boundary.
 
+[![Prism Gate](https://github.com/signalprism/execution-boundary-interpretation/actions/workflows/prism.yml/badge.svg)](https://github.com/signalprism/execution-boundary-interpretation/actions/workflows/prism.yml)
+![Version](https://img.shields.io/badge/version-v0.1.3-blue)
+
+AI agents now generate real pull requests in production repositories.
+
+We review what changed.  
+We rarely declare what the agent was authorized to change.
+
+Execution Boundary Interpretation enforces both.
+
+---
+
+## Core Primitive
+
+    declared authority → actual PR diff → deterministic boundary interpretation
+
+------------------------------------------------------------------------
+
+
+
+# Execution Boundary Interpretation
+
+Deterministic authority enforcement at the pull request boundary.
+
 [![Prism
 Gate](https://github.com/signalprism/execution-boundary-interpretation/actions/workflows/prism.yml/badge.svg)](https://github.com/signalprism/execution-boundary-interpretation/actions/workflows/prism.yml)
 ![Version](https://img.shields.io/badge/version-v0.1.3-blue)
@@ -21,26 +45,28 @@ This Action enforces both.
 
 ------------------------------------------------------------------------
 
-## What It Does
+Every pull request must declare its intended authority level.  
+The Action compares that declaration against the real mutation surface.
 
-For every pull request, this Action:
+If authority is exceeded, the pull request fails.
 
-1.  Classifies the dominant action surface\
-2.  Infers required authority\
-3.  Enforces a minimum authority floor when applicable\
-4.  Fails if declared authority is exceeded
+---
 
-No SaaS.\
-No runtime service.\
-No model inspection.
+## What It Enforces
 
-Deterministic enforcement in CI.
+- Dominant mutation surface classification  
+- Authority comparison (`low < medium < high < critical`)  
+- File-count and line-count limits  
+- Deterministic refusal when authority is exceeded  
+- One-time bootstrap enforcement for repository genesis  
 
-------------------------------------------------------------------------
+If multiple surfaces are modified, the highest required authority wins.
+
+---
 
 ## Install
 
-``` yaml
+```yaml
 name: Prism Gate
 
 on:
@@ -57,13 +83,12 @@ jobs:
       - uses: signalprism/execution-boundary-interpretation@v0.1.3
         with:
           intent_path: "INTENT.json"
-```
 
 ------------------------------------------------------------------------
 
 ## Required File: `INTENT.json`
 
-Every pull request must declare its authority.
+Every pull request must include an authority declaration.
 
 ### Normal Mode
 
@@ -108,33 +133,9 @@ Bootstrap mode is explicitly high-authority.
 Bootstrap semantics in v0.1.3:
 
 -   `mode: bootstrap` enforces required_authority ≥ **high**
--   Deterministic caps limit file count and LOC
--   Bootstrap can only execute once
--   `.prism/bootstrap.lock` seals repository genesis
-
-------------------------------------------------------------------------
-
-## Authority Levels
-
-    low < medium < high < critical
-
-If multiple surfaces are modified, the highest required authority wins.
-
-------------------------------------------------------------------------
-
-## Why This Exists
-
-AI agents generate real pull requests.
-
-Execution Boundary Interpretation ensures that:
-
--   Authority is declared\
--   Mutation surfaces are classified\
--   Violations fail before merge
-
-Interpretation before execution.
-
-Deterministic enforcement at the pull request boundary.
+-   Deterministic file and LOC caps apply
+-   Bootstrap may execute only once
+-   `.prism/bootstrap.lock` seals repository initialization
 
 ------------------------------------------------------------------------
 
@@ -145,6 +146,21 @@ You can test locally using environment overrides:
 ``` bash
 INTENT_PATH=examples/INTENT.normal.json node src/index.js
 ```
+
+------------------------------------------------------------------------
+
+## Why This Exists
+
+AI systems can generate high-quality code.
+They do not inherently understand authority boundaries.
+
+Execution Boundary Interpretation introduces an explicit authority contract before merge.
+
+No SaaS.\
+No runtime service.\
+No model inspection.
+
+Deterministic enforcement at the pull request boundary.
 
 ------------------------------------------------------------------------
 
