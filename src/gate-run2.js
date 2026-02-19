@@ -120,7 +120,13 @@ function runGate({ intentPath, registryPath, bootstrapLockPath, meaningOutPath }
   if (!matched.length) matched.push("code_change");
 
   const dominant = pickDominant(matched, classesById);
-  const required = (classesById[dominant] && classesById[dominant].min_authority) || "medium";
+  let required = (classesById[dominant] && classesById[dominant].min_authority) || "medium";
+
+  // Bootstrap mode inherently requires high authority
+  if (intent.mode === "bootstrap" && authIndex(required) < authIndex("high")) {
+    required = "high";
+  } 
+	
 
   // Step 4: Authority compare
   const declared = String(intent.declared_authority).toLowerCase();
