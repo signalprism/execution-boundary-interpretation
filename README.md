@@ -18,7 +18,7 @@ Execution Boundary Interpretation enforces both.
 
     declared authority → actual PR diff → deterministic boundary interpretation
 
-------------------------------------------------------------------------
+---
 
 Every pull request must declare its intended authority level.  
 The Action compares that declaration against the real mutation surface.
@@ -59,7 +59,7 @@ jobs:
         with:
           intent_path: "INTENT.json"
 
-------------------------------------------------------------------------
+---
 
 ## Required File: `INTENT.json`
 
@@ -76,7 +76,7 @@ Every pull request must include an authority declaration.
 }
 ```
 
-------------------------------------------------------------------------
+---
 
 ## Bootstrap Mode (Repository Genesis)
 
@@ -112,7 +112,7 @@ Bootstrap semantics in v0.1.3:
 -   Bootstrap may execute only once
 -   `.prism/bootstrap.lock` seals repository initialization
 
-------------------------------------------------------------------------
+---
 
 ## Local Testing
 
@@ -122,7 +122,7 @@ You can test locally using environment overrides:
 INTENT_PATH=examples/INTENT.normal.json node src/index.js
 ```
 
-------------------------------------------------------------------------
+---
 
 ## Why This Exists
 
@@ -131,13 +131,13 @@ They do not inherently understand authority boundaries.
 
 Execution Boundary Interpretation introduces an explicit authority contract before merge.
 
-No SaaS.\
-No runtime service.\
+No SaaS.
+No runtime service.
 No model inspection.
 
 Deterministic enforcement at the pull request boundary.
 
-------------------------------------------------------------------------
+---
 
 ## License
 
