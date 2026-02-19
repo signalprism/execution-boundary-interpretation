@@ -20,25 +20,6 @@ Execution Boundary Interpretation enforces both.
 
 ------------------------------------------------------------------------
 
-
-
-# Execution Boundary Interpretation
-
-Deterministic authority enforcement at the pull request boundary.
-
-[![Prism
-Gate](https://github.com/signalprism/execution-boundary-interpretation/actions/workflows/prism.yml/badge.svg)](https://github.com/signalprism/execution-boundary-interpretation/actions/workflows/prism.yml)
-![Version](https://img.shields.io/badge/version-v0.1.3-blue)
-
-AI agents now open real pull requests in production repositories.
-
-We typically review what changed.\
-We rarely declare what the agent was authorized to change.
-
-This Action enforces both.
-
-------------------------------------------------------------------------
-
 ## Core Primitive
 
     declared authority → actual PR diff → deterministic boundary interpretation
