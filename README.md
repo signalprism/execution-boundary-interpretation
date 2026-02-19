@@ -58,7 +58,7 @@ jobs:
       - uses: signalprism/execution-boundary-interpretation@v0.1.3
         with:
           intent_path: "INTENT.json"
-
+...
 ---
 
 ## Required File: `INTENT.json`
