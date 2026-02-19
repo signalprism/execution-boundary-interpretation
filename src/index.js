@@ -3,10 +3,25 @@ const { runGate } = require("./gate-run2");
 
 async function main() {
   try {
-    const intentPath = core.getInput("intent_path") || "INTENT.json";
-    const registryPath = core.getInput("registry_path") || ".prism/surface_registry.yaml";
-    const bootstrapLockPath = core.getInput("bootstrap_lock_path") || ".prism/bootstrap.lock";
-    const meaningOutPath = core.getInput("meaning_out_path") || "meaning.json";
+    const intentPath =
+      process.env.INTENT_PATH ||
+      core.getInput("intent_path") ||
+      "INTENT.json";
+
+    const registryPath =
+      process.env.REGISTRY_PATH ||
+      core.getInput("registry_path") ||
+      ".prism/surface_registry.yaml";
+
+    const bootstrapLockPath =
+      process.env.BOOTSTRAP_LOCK_PATH ||
+      core.getInput("bootstrap_lock_path") ||
+      ".prism/bootstrap.lock";
+
+    const meaningOutPath =
+      process.env.MEANING_OUT_PATH ||
+      core.getInput("meaning_out_path") ||
+      "meaning.json";
 
     const result = runGate({ intentPath, registryPath, bootstrapLockPath, meaningOutPath });
 
