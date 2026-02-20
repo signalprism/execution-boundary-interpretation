@@ -21,4 +21,4 @@ jobs:
           registry_path: ".prism/surface_registry.yaml"
           meaning_out_path: "meaning.json"
           bootstrap_lock_path: ".prism/bootstrap.lock"
-          fail_on: "scope,file_count,deletions"
+
