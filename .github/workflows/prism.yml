@@ -19,4 +19,4 @@ jobs:
         with:
           intent_path: "INTENT.json"
           registry_path: ".prism/surface_registry.yaml"
-          meaning_out_path: "meaning.json"
+          meaning_out_path: "examplemeaning.json"
