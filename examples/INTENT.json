@@ -1,9 +1,4 @@
 {
-  "agent": "claude-code",
-  "scope": ["src/"],
-  "mutation_class": "patch",
-  "max_files": 5,
-  "allow_deletions": false,
-  "allow_renames": false,
-  "allow_moves": false
+"allowed_paths": ["docs/**"],
+"allowed_operations": ["create", "modify"]
 }
