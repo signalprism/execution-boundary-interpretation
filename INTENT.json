@@ -1,4 +1,5 @@
 {
-"allowed_paths": ["docs/**"],
-"allowed_operations": ["create", "modify"]
+  "mode": "normal",
+  "intent": "Mixed change dominance test",
+  "declared_authority": "high"
 }
