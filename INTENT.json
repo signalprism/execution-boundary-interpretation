@@ -1,5 +1,9 @@
 {
-  "mode": "normal",
-  "intent": "Mixed change dominance test",
-  "declared_authority": "high"
+  "mode": "enforce",
+  "intent": "Run 3: docs-only change; fail if PR touches anything else",
+  "declared_authority": "low",
+  "scope": {
+    "allowed_paths": ["docs/**"],
+    "allowed_operations": ["create", "modify"]
+  }
 }
