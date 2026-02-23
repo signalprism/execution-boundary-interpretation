@@ -1,5 +1,5 @@
 {
   "mode": "normal",
   "intent": "Bump package version",
-  "declared_authority": "low"
+  "declared_authority": "high"
 }
