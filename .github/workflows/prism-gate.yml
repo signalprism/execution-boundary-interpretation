@@ -1,11 +1,11 @@
-name: Prism Gate (Run 4)
+name: Prism 
 
 on:
   pull_request:
     types: [opened, synchronize, reopened]
 
 jobs:
-  prism-gate:
+  prism:
     runs-on: ubuntu-latest
     permissions:
       contents: read
