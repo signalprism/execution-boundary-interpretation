@@ -32074,7 +32074,7 @@ async function main() {
     const result = runGate({ intentPath, registryPath, bootstrapLockPath, meaningOutPath });
 
     // Emit summary
-    core.notice(`Run 4 decision: ${result.decision}`);
+    core.notice(`Interpretive Gate decision: ${result.decision}`);
     core.notice(`Dominant action class: ${result.dominant_action_class || "n/a"}`);
     core.notice(`Authority: required=${result.required_authority || "n/a"} declared=${result.declared_authority || "n/a"}`);
 
