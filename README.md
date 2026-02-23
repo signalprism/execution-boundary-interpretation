@@ -2,67 +2,63 @@
 
 Deterministic authority enforcement for AI-generated pull requests.
 
-[![Prism Gate](https://github.com/signalprism/execution-boundary-interpretation/actions/workflows/prism.yml/badge.svg)](https://github.com/signalprism/execution-boundary-interpretation/actions/workflows/prism.yml)
-![Version](https://img.shields.io/badge/version-v0.1.3-blue)
+[![Prism Gate](https://github.com/signalprism/execution-boundary-interpretation/actions/workflows/prism-gate.yml/badge.svg)](https://github.com/signalprism/execution-boundary-interpretation/actions/workflows/prism.yml)
+![Version](https://img.shields.io/badge/version-v0.2.0-blue)
 
-AI agents now generate real pull requests in production repositories.
+This GitHub Action evaluates declared intent against the actual PR diff, classifies the dominant action class, computes required authority, and enforces legitimacy before execution.
 
-We review what changed.  
-We rarely declare what the agent was authorized to change.
+No model judgment.
+No heuristics.
+No SaaS dependency.
 
-Execution Boundary Interpretation enforces both.
-
----
-
-## Core Primitive
-
-    declared authority → actual PR diff → deterministic boundary interpretation
+Interpretation happens before execution.
 
 ---
 
-Every pull request must declare its intended authority level.  
-The Action compares that declaration against the real mutation surface.
+## What It Does
 
-If authority is exceeded, the pull request fails.
-
----
-
-## What It Enforces
-
-- Dominant mutation surface classification  
-- Authority comparison (`low < medium < high < critical`)  
-- File-count and line-count limits  
-- Deterministic refusal when authority is exceeded  
-- One-time bootstrap enforcement for repository genesis  
+On every pull request:
+1. Reads INTENT.json
+2. Classifies the PR diff using a surface_registry.yaml
+3. Computes required authority from action class
+4. Compares against declared authority
+5. Emits a meaning artifact
+6. Fails or passes deterministically  
 
 If multiple surfaces are modified, the highest required authority wins.
 
 ---
 
 ## Install
-
-```yaml
+``` yaml
 name: Prism Gate
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened]
 
 jobs:
   prism:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - uses: signalprism/execution-boundary-interpretation@v0.1.3
-        with:
-          intent_path: "INTENT.json"
+      - name: Run Prism Gate
+        uses: signalprism/execution-boundary-interpretation@v0.2.0
+        env:
+          INTENT_PATH: "INTENT.json"
+          REGISTRY_PATH: ".prism/surface_registry.yaml"
+          BOOTSTRAP_LOCK_PATH: ".prism/bootstrap.lock"
+          MEANING_OUT_PATH: "meaning.json"
 ```
 
 ---
 
-## Required File: `INTENT.json`
+## Required File:
+1️⃣ INTENT.json (root)
 
 Every pull request must include an authority declaration.
 
@@ -71,73 +67,109 @@ Every pull request must include an authority declaration.
 ``` json
 {
   "mode": "normal",
-  "intent": "Add pagination to API",
-  "declared_authority": "medium",
-  "allowed_action_classes": ["code_change", "test_change"]
+  "intent": "Describe the purpose of this PR",
+  "declared_authority": "low"
 }
 ```
-
+Authority ladder (default ordering):
+- low
+- medium
+- high
 ---
-
-## Bootstrap Mode (Repository Genesis)
-
-Bootstrap mode is explicitly high-authority.
-
-``` json
-{
-  "mode": "bootstrap",
-  "intent": "Initial repository scaffold",
-  "declared_authority": "high",
-  "bootstrap_scope": {
-    "allowed_paths": ["**"],
-    "allowed_action_classes": [
-      "new_codebase",
-      "code_change",
-      "dependency_change",
-      "workflow_change",
-      "doc_change"
-    ],
-    "caps": {
-      "max_files_added": 600,
-      "max_total_loc_added": 50000,
-      "max_new_top_level_dirs": 20
-    }
-  }
-}
+2️⃣ Surface Registry
+```
+.prism/surface_registry.yaml
 ```
 
-Bootstrap semantics in v0.1.3:
-
--   `mode: bootstrap` enforces required_authority ≥ **high**
--   Deterministic file and LOC caps apply
--   Bootstrap may execute only once
--   `.prism/bootstrap.lock` seals repository initialization
-
----
-
-## Local Testing
-
-You can test locally using environment overrides:
-
-``` bash
-INTENT_PATH=examples/INTENT.normal.json node src/index.js
+Example:
 ```
+version: 1
 
+surfaces:
+  dependency_change:
+    match:
+      - "package.json"
+      - "package-lock.json"
+    required_authority: high
+
+  workflow_change:
+    match:
+      - ".github/workflows/**"
+    required_authority: high
+
+  doc_change:
+    match:
+      - "README.md"
+      - "docs/**"
+    required_authority: low
+```
+The dominant action class is computed from the PR diff.
+
+Example: Execution Boundary Demo
+
+A pull request bumps package.json.
+
+Surface registry classifies:
+```yaml
+dependency_change
+```
+Required authority: high
 ---
+Case 1 — Declared authority: low
+```yaml
+Interpretive Gate decision: fail
+Dominant action class: dependency_change
+Authority: required=high declared=low
+Gate failed: authority_exceeded:required=high,declared=low
+```
+PR is blocked.
 
-## Why This Exists
+Case 2 — Declared authority: high
+```yaml
+Interpretive Gate decision: pass
+Dominant action class: dependency_change
+Authority: required=high declared=high
+```
+PR is allowed.
+Same diff. Different legitimacy.
+---
+Meaning Artifact
 
-AI systems can generate high-quality code.
-They do not inherently understand authority boundaries.
+On every run, the gate emits ```meaning.json``` containing:
+- dominant_action_class
+- required_authority
+- declared_authority
+- decision
+- canon bundle hash
+- promotion metadata
+This provides an auditable interpretive trace.
+---
+Canon Bundle Structure (Run 4)
+```yaml
+canon_bundle/
+  canon.yaml
+  layers/
+    00_foundation/
+    10_org_overlay/
+    20_repo_overlay/
+  artifacts/
+  promotion.yaml
+```
+Canon separates interpretation from execution logic.
 
-Execution Boundary Interpretation introduces an explicit authority contract before merge.
+Interpretation is domain-authored and immutable once promoted.
+---
+Why This Exists
 
-No SaaS.\
-No runtime service.\
-No model inspection.
+Model safety governs outputs.
 
-Deterministic enforcement at the pull request boundary.
+Interpretive safety governs whether actions are legitimate before execution.
 
+This action implements a deterministic contract between intent and change at the pull request boundary.
+
+It is a development wedge of Signal & Prism’s broader interpretive control plane.
+
+Interpretation isn’t inferred. It’s designed.
 ---
 
 ## License
