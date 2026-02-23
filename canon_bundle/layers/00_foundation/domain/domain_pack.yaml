@@ -1,0 +1,26 @@
+schema: sp.domain_pack.v0_1
+
+domain_pack_id: "DP-DEV-GOVERNANCE"
+domain_pack_version: "0.1.0"
+
+name: "Dev Governance Domain Pack"
+scope:
+  surfaces:
+    - "github.pull_request"
+    - "agent.tool_call"
+
+invariants:
+  - "domain_semantics_immutable_when_loaded"
+  - "no_decisions_or_directives_emitted_by_domain_pack"
+
+outputs_contract:
+  must_return:
+    - semantic_interpretation
+    - expectation_evaluation
+    - interpretive_signals
+    - narrative_fragments
+  must_not_return:
+    - decisions
+    - actions
+    - policy_outcomes
+    - severity_scores

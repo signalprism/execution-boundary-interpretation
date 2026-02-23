@@ -1,0 +1,23 @@
+schema: sp.canon.pack.v0_1
+pack_id: "org-overlay-example"
+pack_version: "0.1.0"
+type: "org_overlay"
+
+scope:
+  applies_to:
+    surfaces: ["github.pull_request", "agent.tool_call"]
+    org: "example-org"
+
+domain:
+  refs:
+    expectations_overrides: "domain/expectations_overrides.yaml"
+    narrative_overrides: "domain/narrative_overrides.yaml"
+
+prisms:
+  - prism_id: "PRISM-DEV-PRIMARY"
+    ref: "prisms/dev_primary_overrides.yaml"
+
+provenance:
+  authored_by: "Customer Org"
+  ai_assisted: true
+  curated: false

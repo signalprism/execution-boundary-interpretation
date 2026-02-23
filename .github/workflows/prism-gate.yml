@@ -1,0 +1,32 @@
+name: Prism 
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  prism:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Prism Gate (local)
+        uses: ./
+        env:
+          INTENT_PATH: "INTENT.json"
+          REGISTRY_PATH: ".prism/surface_registry.yaml"
+          BOOTSTRAP_LOCK_PATH: ".prism/bootstrap.lock"
+          MEANING_OUT_PATH: "meaning.json"
+
+      - name: Upload meaning artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: meaning-artifact
+          path: meaning.json

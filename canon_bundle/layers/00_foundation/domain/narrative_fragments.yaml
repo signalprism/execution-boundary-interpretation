@@ -1,0 +1,15 @@
+schema: sp.domain.narrative_fragments.v0_1
+
+fragments:
+  what_happened:
+    template: "Event on surface '{surface}' changed '{change_summary}'."
+  declared_intent:
+    template: "Declared intent: '{intent}'. Declared authority: '{declared_authority}'."
+  interpretation:
+    template: "Interpreted action class: '{action_class}'. Authority required (if production): '{authority_required}'."
+  expectations:
+    template: "Expectation alignment: '{alignment}'. Deviations: {deviation_signals}."
+  reversibility:
+    template: "Reversibility assessment: '{reversibility}'."
+  caution:
+    template: "Advisory only: this is interpretive meaning, not authorization."
