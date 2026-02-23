@@ -4,6 +4,20 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
 
+  # allows you to run it manually from Actions tab
+  workflow_dispatch:
+
+  # gives the badge a status on default branch
+  push:
+    branches: [main]
+    paths:
+      - ".prism/**"
+      - "canon_bundle/**"
+      - "src/**"
+      - "dist/**"
+      - ".github/workflows/prism-gate.yml"
+      - "INTENT.json"
+
 jobs:
   prism:
     runs-on: ubuntu-latest
