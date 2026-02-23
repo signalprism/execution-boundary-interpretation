@@ -64,7 +64,7 @@ jobs:
 
 ## Required File: `INTENT.json`
 
-Every pull request must include an authority declaration.
+Every pull request "must include an authority declaration".
 
 ### Normal Mode
 
