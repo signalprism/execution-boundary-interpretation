@@ -1,5 +1,5 @@
 {
   "mode": "normal",
-  "intent": "Dependency + docs updates",
-  "declared_authority": "high"
+  "intent": "Bump package version",
+  "declared_authority": "low"
 }
