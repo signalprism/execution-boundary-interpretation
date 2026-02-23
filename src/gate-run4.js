@@ -11,6 +11,7 @@ const { invokeDomainPack } = require("./runtime/invokeDomainPack");
 const { invokePrism } = require("./runtime/invokePrism");
 const { assembleNarrative } = require("./runtime/assembleNarrative");
 const { emitMeaningArtifact } = require("./runtime/emitMeaningArtifact");
+const { classifyBySurfaceRegistry } = require("./runtime/classifyBySurfaceRegistry");
 
 function readJson(p) {
   return JSON.parse(fs.readFileSync(p, "utf8"));
@@ -32,13 +33,12 @@ function getChangedFiles() {
     }
   } catch (_) {}
 
-  const out = execSync("git diff --name-only HEAD~1...HEAD", {
-    encoding: "utf8",
-  }).trim();
+  const out = execSync("git diff --name-only HEAD~1...HEAD", { encoding: "utf8" }).trim();
   return out ? out.split("\n").map((s) => s.trim()).filter(Boolean) : [];
 }
 
 function loadRegistry(registryPath) {
+  if (!registryPath) return null;
   if (!fs.existsSync(registryPath)) return null;
   return readYaml(registryPath);
 }
@@ -47,12 +47,17 @@ function chooseSurface(_registry) {
   return "github.pull_request";
 }
 
-function compareAuthority(required, declared) {
-  const order = ["low", "medium", "high", "systemic"];
+function compareAuthority(required, declared, authorityOrder) {
+  const order =
+    Array.isArray(authorityOrder) && authorityOrder.length
+      ? authorityOrder
+      : ["low", "medium", "high", "critical"];
+
   const r = order.indexOf(required);
   const d = order.indexOf(declared);
-  if (r === -1 || d === -1)
+  if (r === -1 || d === -1) {
     return { exceeded: true, reason: "unknown_authority_level" };
+  }
   return {
     exceeded: r > d,
     reason: r > d ? "declared_authority_insufficient" : null,
@@ -63,26 +68,20 @@ function runGate({ intentPath, registryPath, bootstrapLockPath, meaningOutPath }
   const repoRoot = process.cwd();
   void bootstrapLockPath;
 
+  // 1) Load Canon Bundle + enforce promotion + verify integrity
   const bundle = loadCanonBundle(path.join(repoRoot, "canon_bundle"));
   assertPromotion(bundle.promotion);
 
   const canonId = bundle.canon?.canon_id;
   const canonVersion = bundle.canon?.canon_version;
-  if (!canonId || !canonVersion)
-    throw new Error("canon.yaml missing canon_id/canon_version");
+  if (!canonId || !canonVersion) throw new Error("canon.yaml missing canon_id/canon_version");
 
-  const verify = verifyCanonHashAgainstDisk(
-    bundle.root,
-    canonId,
-    canonVersion,
-    bundle.bundleIndex
-  );
-  if (!verify.ok)
-    throw new Error(`Canon integrity verification failed: ${verify.reason}`);
+  const verify = verifyCanonHashAgainstDisk(bundle.root, canonId, canonVersion, bundle.bundleIndex);
+  if (!verify.ok) throw new Error(`Canon integrity verification failed: ${verify.reason}`);
   const canonHash = verify.canonHash;
 
-  if (!fs.existsSync(intentPath))
-    throw new Error(`INTENT file not found: ${intentPath}`);
+  // 2) Read INTENT
+  if (!fs.existsSync(intentPath)) throw new Error(`INTENT file not found: ${intentPath}`);
   const intent = readJson(intentPath);
 
   const declared = {
@@ -93,22 +92,41 @@ function runGate({ intentPath, registryPath, bootstrapLockPath, meaningOutPath }
     throw new Error(`INTENT.json must include 'intent' and 'declared_authority'`);
   }
 
+  // 3) Load surface registry + classify
   const registryAbs = path.resolve(repoRoot, registryPath);
   const registry = loadRegistry(registryAbs);
+
+  if (!registry) {
+    throw new Error(
+      `surface_registry.yaml not found or unreadable at: ${registryAbs} (required for Run 4 classification)`
+    );
+  }
+
   const surface = chooseSurface(registry);
+  const authorityOrder = registry.authority_order || ["low", "medium", "high", "critical"];
 
   const files = getChangedFiles();
+  const classification = classifyBySurfaceRegistry(registry, { files_changed: files });
+
+  // 4) Build normalized event
   const payload = {
     repo: process.env.GITHUB_REPOSITORY || "unknown",
     files_changed: files,
-    diff_summary: files.length
-      ? `${files.length} files changed`
-      : "no changes detected",
+    diff_summary: files.length ? `${files.length} files changed` : "no changes detected",
+    classification: {
+      matched_classes: classification.matched_classes,
+      dominant_action_class: classification.dominant_action_class,
+      required_authority: classification.required_authority,
+      signals: classification.signals,
+      authority_order: authorityOrder,
+    },
   };
 
   const event = normalizeEvent({ surface, payload });
 
+  // 5) Domain Pack → Prism → OS assembly
   const domainPack = bundle.domain.domain_pack;
+
   const domainOutput = invokeDomainPack({
     domainPack,
     domainComponents: bundle.domain,
@@ -123,18 +141,24 @@ function runGate({ intentPath, registryPath, bootstrapLockPath, meaningOutPath }
 
   const understanding = assembleNarrative({ domainOutput, prismOutput });
 
+  // 6) Gate decision (tooling enforcement)
   const required = domainOutput.semantic_interpretation.authority_required;
   const declaredAuth = declared.authority;
-  const cmp = compareAuthority(required, declaredAuth);
 
-  const systemic = domainOutput.semantic_interpretation.action_class === "systemic";
-  const exceeded = cmp.exceeded || systemic;
+  const cmp = compareAuthority(required, declaredAuth, authorityOrder);
+  const exceeded = cmp.exceeded;
 
   const gateResult = exceeded ? "fail" : "pass";
   const reasons = [];
-  if (systemic) reasons.push("systemic_change_detected");
   if (cmp.exceeded) reasons.push(cmp.reason);
 
+  // bubble up registry signals when the required authority is critical
+  if (required === "critical") {
+    const sigs = classification.signals || [];
+    for (const s of sigs) reasons.push(s);
+  }
+
+  // 7) Emit meaning artifact
   const meaning = emitMeaningArtifact({
     canon: { canon_id: canonId, canon_version: canonVersion },
     canonHash,

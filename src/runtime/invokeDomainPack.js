@@ -1,5 +1,5 @@
 function containsWorkflowChange(filesChanged = []) {
-  return filesChanged.some((f) => f.startsWith(".github/workflows/"));
+  return filesChanged.some((f) => String(f).replace(/\\/g, "/").startsWith(".github/workflows/"));
 }
 
 function summarizeChange(payload) {
@@ -15,6 +15,41 @@ function applyInterpretiveRules(domainRules, event, declared) {
   const payload = event.payload || {};
   const filesChanged = payload.files_changed || [];
 
+  // ✅ Prefer registry-driven classification if present
+  const reg = payload.classification;
+  if (reg && reg.dominant_action_class && reg.required_authority) {
+    const action_class = String(reg.dominant_action_class);
+    const authority_required = String(reg.required_authority);
+
+    let reversibility = "unknown";
+    if (["doc_change", "test_change", "code_change"].includes(action_class)) reversibility = "high";
+    else if (["dependency_change"].includes(action_class)) reversibility = "medium";
+    else if (["workflow_change"].includes(action_class)) reversibility = "low";
+
+    const deviation_signals = [];
+    if (["workflow_change", "dependency_change", "secret_material", "new_codebase"].includes(action_class)) {
+      deviation_signals.push("scope_expansion");
+    }
+
+    const alignment = deviation_signals.length === 0 ? "aligned" : "deviates";
+
+    return {
+      semantic_interpretation: {
+        action_class,
+        authority_required,
+        change_summary: summarizeChange(payload),
+      },
+      expectation_evaluation: {
+        alignment,
+        deviation_signals,
+      },
+      interpretive_signals: {
+        reversibility,
+      },
+    };
+  }
+
+  // Fallback to prior simple logic
   let action_class = "mutate";
   if (surface === "github.pull_request") {
     action_class = containsWorkflowChange(filesChanged) ? "systemic" : "mutate";
@@ -51,7 +86,7 @@ function applyInterpretiveRules(domainRules, event, declared) {
 
   const intent = String(declared?.intent || "");
   if (surface === "github.pull_request") {
-    if (intent.toLowerCase().includes("deps") && filesChanged.some((f) => f.startsWith("src/"))) {
+    if (intent.toLowerCase().includes("deps") && filesChanged.some((f) => String(f).startsWith("src/"))) {
       deviation_signals.push("unexpected_change_class");
     }
   }
@@ -89,7 +124,13 @@ function renderFragments(fragmentSpec, vars) {
   return out;
 }
 
+/**
+ * Domain Pack invocation (dev wedge):
+ * Returns { semantic_interpretation, expectation_evaluation, interpretive_signals, narrative_fragments }
+ */
 function invokeDomainPack({ domainPack, domainComponents, event, declared }) {
+  void domainPack; // reserved for future strict validation of pack invariants
+
   const rulesYaml = domainComponents?.interpretive_rules || {};
   const domainRules = {
     authority_map:
@@ -110,10 +151,7 @@ function invokeDomainPack({ domainPack, domainComponents, event, declared }) {
     reversibility: base.interpretive_signals.reversibility,
   };
 
-  const narrative_fragments = renderFragments(
-    domainComponents?.narrative_fragments,
-    vars
-  );
+  const narrative_fragments = renderFragments(domainComponents?.narrative_fragments, vars);
 
   return {
     semantic_interpretation: base.semantic_interpretation,

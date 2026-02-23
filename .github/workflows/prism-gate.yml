@@ -1,0 +1,65 @@
+git push -u origin run4-canon-bundle-domain-pack-prismname: Prism Gate (Run 4)
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  prism-gate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # If you want to test the action from THIS repo
+      - name: Run local action
+        uses: ./
+        with:
+          intent_path: "INTENT.json"
+          registry_path: ".prism/surface_registry.yaml"
+          bootstrap_lock_path: ".prism/bootstrap.lock"
+          meaning_out_path: "meaning.json"
+
+      - name: Upload meaning artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: meaning-artifact
+          path: meaning.jsonname: Prism Gate (Run 4)
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  prism-gate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # If you want to test the action from THIS repo
+      - name: Run local action
+        uses: ./
+        with:
+          intent_path: "INTENT.json"
+          registry_path: ".prism/surface_registry.yaml"
+          bootstrap_lock_path: ".prism/bootstrap.lock"
+          meaning_out_path: "meaning.json"
+
+      - name: Upload meaning artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: meaning-artifact
+          path: meaning.json
