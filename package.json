@@ -5,6 +5,7 @@
   "main": "dist/index.js",
   "scripts": {
     "build": "ncc build src/index.js -o dist",
+    "package": "npm run build",
     "test:local": "node src/index.js",
     "canon:index": "node tools/build-canon-index.js"
   },
