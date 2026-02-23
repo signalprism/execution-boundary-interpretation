@@ -1,5 +1,5 @@
 {
   "mode": "normal",
-  "intent": "Docs only",
-  "declared_authority": "low"
+  "intent": "Dependency + docs updates",
+  "declared_authority": "high"
 }
