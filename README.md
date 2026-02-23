@@ -2,7 +2,7 @@
 
 Deterministic authority enforcement for AI-generated pull requests.
 
-[![Prism Gate](https://github.com/signalprism/execution-boundary-interpretation/actions/workflows/prism.yml/badge.svg?branch=main)](https://github.com/signalprism/execution-boundary-interpretation/actions/workflows/prism.yml)
+[![Prism Gate](https://github.com/signalprism/execution-boundary-interpretation/actions/workflows/prism.yml/badge.svg?branch=main)](https://github.com/signalprism/execution-boundary-interpretation/actions/workflows/prism-gate.yml)
 ![Version](https://img.shields.io/badge/version-v0.1.3-blue)
 
 This GitHub Action evaluates declared intent against the actual PR diff, classifies the dominant action class, computes required authority, and enforces legitimacy before execution.
