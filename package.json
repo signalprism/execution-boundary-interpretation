@@ -14,4 +14,7 @@
   "devDependencies": {
     "@vercel/ncc": "^0.38.3"
   }
+  "canon:index": {
+    "node tools/build-canon-index.js"
+  }
 }

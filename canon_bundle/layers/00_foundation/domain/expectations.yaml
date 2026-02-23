@@ -1,0 +1,18 @@
+schema: sp.domain.expectations.v0_1
+
+expectations:
+  - id: pr_changes_should_match_declared_intent
+    applies_to: ["github.pull_request"]
+    description: "Declared intent should align with changed files/classes of change."
+    norm:
+      allowed_change_classes: ["docs", "deps", "formatting", "tests", "feature", "security", "workflow"]
+    deviation_signals:
+      - "unexpected_change_class"
+      - "scope_expansion"
+
+  - id: agent_tool_calls_should_be_bounded
+    applies_to: ["agent.tool_call"]
+    description: "Agent tool calls should not silently escalate scope or privilege."
+    deviation_signals:
+      - "implicit_external_mutation"
+      - "implicit_privilege"

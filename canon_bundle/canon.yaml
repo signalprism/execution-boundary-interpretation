@@ -1,0 +1,35 @@
+schema: sp.canon.bundle.v0_1
+
+canon_id: "sp-dev-canon"
+canon_version: "0.1.0"
+created_at: "2026-02-22T22:10:00Z"
+
+description: >
+  Dev wedge Canon bundle: single Domain Pack + single Prism (dev_primary),
+  with deterministic narrative assembly.
+
+mode_defaults:
+  posture: "advisory"           # advisory|controlled|strict
+  on_unknown_action: "escalate" # allow|deny|escalate
+  on_schema_mismatch: "deny"
+
+composition:
+  layer_order:
+    - layers/00_foundation
+    - layers/10_org_overlay
+    - layers/20_repo_overlay
+
+  merge_strategy:
+    domain: "overlay_by_key"                  # later layers override by id/key
+    prisms: "overlay_by_prism_id"
+    schemas: "highest_version_wins"
+
+schemas:
+  interpretation_artifact: "layers/00_foundation/schemas/interpretation-artifact-v2.json"
+
+integrity:
+  content_hashes_file: "artifacts/bundle.index.json"
+  checksum_file: "artifacts/checksums.sha256"
+  signature_policy:
+    require_signatures: false
+    accepted_signers: []

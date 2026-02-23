@@ -1,0 +1,56 @@
+schema: sp.prism.v0_1
+
+prism_id: "PRISM-DEV-PRIMARY"
+prism_version: "0.1.0"
+
+name: "Dev Primary Prism"
+perspective: "development_safety"
+
+inputs_contract:
+  consumes:
+    - domain.semantic_interpretation
+    - domain.expectation_evaluation
+    - domain.interpretive_signals
+
+outputs_contract:
+  must_return:
+    - significance_assessment
+    - rationale
+    - sensitivity_indicators
+  must_not:
+    - arbitrate
+    - emit_directives
+
+significance_rules:
+  - id: scope_expansion_is_high_concern
+    when:
+      deviation_signal_includes: "scope_expansion"
+    then:
+      concern: "high"
+      uncertainty: "low"
+
+  - id: systemic_is_high_concern
+    when:
+      action_class_equals: "systemic"
+    then:
+      concern: "high"
+      uncertainty: "low"
+
+  - id: default_is_medium_concern
+    when:
+      otherwise: true
+    then:
+      concern: "medium"
+      uncertainty: "medium"
+
+rationale_templates:
+  - id: rationale_default
+    template: "From the dev safety perspective, concern is '{concern}' due to '{drivers}'."
+
+sensitivity_indicators:
+  escalation_likelihood:
+    high_concern: "likely"
+    medium_concern: "possible"
+    low_concern: "unlikely"
+  tolerance_bounds:
+    default: "Prefer explicit intent for scope changes."
