@@ -1,0 +1,47 @@
+{
+  "schema": "sp.ebi.mutation_report.v1",
+  "source": {
+    "repo": "local/test",
+    "ref": "refs/heads/local"
+  },
+  "summary": {
+    "baseRef": "main",
+    "mergeBase": "7c3d61ab31969f9e62ac5724d830fcdbf6f55673",
+    "changed_paths": [
+      {
+        "path": "package.json",
+        "status": "M"
+      }
+    ],
+    "files_added": 0,
+    "files_modified": 1,
+    "files_deleted": 0,
+    "total_loc_added": 3,
+    "total_loc_deleted": 1,
+    "new_top_level_dirs": 0
+  },
+  "mutations": [
+    {
+      "mutation_class_id": "dependency.production.modify",
+      "class_version": "1.0.0",
+      "severity": "high",
+      "implied_authority": "high",
+      "confidence": 1,
+      "match_logic": {
+        "ruleset_id": "sp.ebi.catalog.github_pr.default",
+        "rule_ids": [
+          "pkg_json"
+        ]
+      },
+      "evidence": [
+        {
+          "evidence_type": "file_path",
+          "path": "package.json",
+          "signals": {
+            "matched_class": "dependency.production.modify"
+          }
+        }
+      ]
+    }
+  ]
+}

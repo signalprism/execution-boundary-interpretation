@@ -1,0 +1,167 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://signalprism.dev/schemas/sp.ebi.mutation_report.v1.schema.json",
+  "title": "Signal & Prism — EBI Mutation Report v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "source", "summary", "mutations"],
+  "properties": {
+    "schema": {
+      "type": "string",
+      "const": "sp.ebi.mutation_report.v1"
+    },
+
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repo", "ref"],
+      "properties": {
+        "repo": { "type": "string" },
+        "ref": { "type": "string" },
+        "pr": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "number": { "type": "integer", "minimum": 1 },
+            "head_sha": { "type": "string", "minLength": 7 },
+            "base_sha": { "type": "string", "minLength": 7 }
+          }
+        }
+      }
+    },
+
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "baseRef",
+        "mergeBase",
+        "changed_paths",
+        "files_added",
+        "files_modified",
+        "files_deleted",
+        "total_loc_added",
+        "total_loc_deleted",
+        "new_top_level_dirs"
+      ],
+      "properties": {
+        "baseRef": { "type": "string" },
+        "mergeBase": { "type": "string" },
+
+        "changed_paths": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["path", "status"],
+            "properties": {
+              "path": { "type": "string" },
+              "status": { "type": "string" }
+            }
+          }
+        },
+
+        "files_added": { "type": "integer", "minimum": 0 },
+        "files_modified": { "type": "integer", "minimum": 0 },
+        "files_deleted": { "type": "integer", "minimum": 0 },
+
+        "total_loc_added": { "type": "integer", "minimum": 0 },
+        "total_loc_deleted": { "type": "integer", "minimum": 0 },
+
+        "new_top_level_dirs": { "type": "integer", "minimum": 0 }
+      }
+    },
+
+    "mutations": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/mutationFinding" }
+    }
+  },
+
+  "definitions": {
+    "severity": {
+      "type": "string",
+      "enum": ["low", "medium", "high", "critical"]
+    },
+    "authority": {
+      "type": "string",
+      "enum": ["none", "low", "medium", "high", "critical"]
+    },
+
+    "mutationFinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mutation_class_id",
+        "class_version",
+        "severity",
+        "confidence",
+        "match_logic",
+        "evidence"
+      ],
+      "properties": {
+        "mutation_class_id": {
+          "type": "string",
+          "pattern": "^[a-z0-9]+(\\.[a-z0-9]+)+$"
+        },
+        "class_version": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+        },
+
+        "severity": { "$ref": "#/definitions/severity" },
+        "implied_authority": { "$ref": "#/definitions/authority" },
+
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+
+        "match_logic": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["ruleset_id", "rule_ids"],
+          "properties": {
+            "ruleset_id": { "type": "string", "minLength": 1 },
+            "rule_ids": {
+              "type": "array",
+              "minItems": 1,
+              "items": { "type": "string", "minLength": 1 }
+            }
+          }
+        },
+
+        "evidence": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/definitions/evidenceItem" }
+        }
+      }
+    },
+
+    "evidenceItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["evidence_type", "path", "signals"],
+      "properties": {
+        "evidence_type": {
+          "type": "string",
+          "enum": [
+            "file_path",
+            "file_diff_hunk",
+            "delta_summary",
+            "regex_match",
+            "executable_bit_change",
+            "binary_file_change"
+          ]
+        },
+        "path": { "type": "string", "minLength": 1 },
+
+        "hunk_header": { "type": "string" },
+
+        "signals": { "type": "object" }
+      }
+    }
+  }
+}
