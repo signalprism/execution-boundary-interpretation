@@ -2,174 +2,127 @@
 
 Deterministic authority enforcement for AI-generated pull requests.
 
-[![Prism Gate](https://github.com/signalprism/execution-boundary-interpretation/actions/workflows/prism.yml/badge.svg?branch=main)](https://github.com/signalprism/execution-boundary-interpretation/actions/workflows/prism.yml)
-![Version](https://img.shields.io/badge/version-v0.1.3-blue)
+[![Prism Gate](https://github.com/signalprism/execution-boundary-interpretation/actions/workflows/prism-gate.yml/badge.svg?branch=main)](https://github.com/signalprism/execution-boundary-interpretation/actions/workflows/prism-gate.yml)
+![Version](https://img.shields.io/badge/version-v0.2.0--run4-blue)
 
-This GitHub Action evaluates declared intent against the actual PR diff, classifies the dominant action class, computes required authority, and enforces legitimacy before execution.
-
-No model judgment.
-No heuristics.
-No SaaS dependency.
-
-Interpretation happens before execution.
+This GitHub Action evaluates declared declared authority against the actual mutation surface of a pull request.
+It does not interpret prompts.
+It interprets diffs.
 
 ---
 
 ## What It Does
 
-On every pull request:
-1. Reads INTENT.json
-2. Classifies the PR diff using a surface_registry.yaml
-3. Computes required authority from action class
-4. Compares against declared authority
-5. Emits a meaning artifact
-6. Fails or passes deterministically  
-
-If multiple surfaces are modified, the highest required authority wins.
+When a pull request runs:
+1. Computes the actual diff surface.
+2. Classifies mutations (dependency changes, workflow edits, secret material, etc.).
+3. Infers required authority from a registry.
+4. Compares required authority to declared authority.
+5. Passes or fails deterministically.
+6. Emits a structured meaning artifact for traceability.
 
 ---
+## Authority Model
 
-## Install
-``` yaml
-name: Prism Gate
+Authority is resolved in this order:
+1. AUTHORITY_CONTRACT.json (preferred)
+2. INTENT.json (legacy fallback)
 
-on:
-  pull_request:
-    types: [opened, synchronize, reopened]
-
-jobs:
-  prism:
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Run Prism Gate
-        uses: signalprism/execution-boundary-interpretation@v0.2.0
-        env:
-          INTENT_PATH: "INTENT.json"
-          REGISTRY_PATH: ".prism/surface_registry.yaml"
-          BOOTSTRAP_LOCK_PATH: ".prism/bootstrap.lock"
-          MEANING_OUT_PATH: "meaning.json"
-```
-
----
-
-## Required File:
-1️⃣ INTENT.json (root)
-
-Every pull request must include an authority declaration.
-
-### Normal Mode
-
-``` json
-{
-  "mode": "normal",
-  "intent": "Describe the purpose of this PR",
-  "declared_authority": "low"
-}
-```
-Authority ladder (default ordering):
-- low
-- medium
-- high
----
-2️⃣ Surface Registry
-```
-.prism/surface_registry.yaml
-```
+The declared authority tier is compared against the required authority implied by detected mutation classes.
 
 Example:
-```
-version: 1
 
-surfaces:
-  dependency_change:
-    match:
-      - "package.json"
-      - "package-lock.json"
-    required_authority: high
+dependency.production.modify → required: high
+declared_authority: medium
+→ Gate fails
 
-  workflow_change:
-    match:
-      - ".github/workflows/**"
-    required_authority: high
-
-  doc_change:
-    match:
-      - "README.md"
-      - "docs/**"
-    required_authority: low
-```
-The dominant action class is computed from the PR diff.
-
-Example: Execution Boundary Demo
-
-A pull request bumps package.json.
-
-Surface registry classifies:
-```yaml
-dependency_change
-```
-Required authority: high
 ---
-Case 1 — Declared authority: low
-```yaml
-Interpretive Gate decision: fail
-Dominant action class: dependency_change
-Authority: required=high declared=low
-Gate failed: authority_exceeded:required=high,declared=low
-```
-PR is blocked.
+## Mutation Semantics
 
-Case 2 — Declared authority: high
-```yaml
-Interpretive Gate decision: pass
-Dominant action class: dependency_change
-Authority: required=high declared=high
-```
-PR is allowed.
-Same diff. Different legitimacy.
+Mutation classes are deterministic and registry-driven.
+
+Examples:
+- dependency.production.modify
+- ci.workflow.modify
+- secret.material.add
+- runtime.behavior.modify
+
+Each mutation class maps to a dominant action class and minimum authority requirement.
+
 ---
-Meaning Artifact
 
-On every run, the gate emits ```meaning.json``` containing:
-- dominant_action_class
-- required_authority
-- declared_authority
-- decision
-- canon bundle hash
-- promotion metadata
-This provides an auditable interpretive trace.
+## Run-Scoped Artifacts
+
+Each gate execution writes structured artifacts to:
+.prism/runs/<sha-timestamp>/
+  meaning.json
+  mutation_report.json
+
+Artifacts are not overwritten between runs.
+
+meaning.json
+Contains:
+- authority contract used
+- diff summary
+- mutation report
+- dominant action class
+- required vs declared authority
+- final decision
+- enforcement reasons (if any)
+
+mutation_report.json
+- Contains:
+- raw mutation findings
+- classification metadata
+- severity
+- implied authority
+
+Example Output
+::notice::Authority source: AUTHORITY_CONTRACT.json
+::notice::Changed files evaluated: 1
+::notice::Mutations: dependency.production.modify(high)
+::notice::Run 4 decision: fail
+::notice::Dominant action class: dependency_change
+::notice::Authority: required=high declared=medium
+::error::Gate failed: Authority mismatch: dependency.production.modify implies high, declared medium
+
 ---
-Canon Bundle Structure (Run 4)
-```yaml
-canon_bundle/
-  canon.yaml
-  layers/
-    00_foundation/
-    10_org_overlay/
-    20_repo_overlay/
-  artifacts/
-  promotion.yaml
-```
-Canon separates interpretation from execution logic.
 
-Interpretation is domain-authored and immutable once promoted.
+## Why This Exists
+
+AI agents and automation systems increasingly open pull requests autonomously.
+
+We typically review what changed.
+We rarely declare what was authorized to change.
+
+Execution Boundary Interpretation introduces:
+
+- explicit authority declaration
+- deterministic mutation evaluation
+- contract-bound enforcement
+- traceable interpretive artifacts
+
+It establishes an execution boundary between proposal and action.
 ---
-Why This Exists
+## Minimal Usage
+Add the GitHub Action:
+- uses: signalprism/execution-boundary-interpretation@vX
 
-Model safety governs outputs.
+Provide either:
+- AUTHORITY_CONTRACT.json
+- or INTENT.json (legacy)
 
-Interpretive safety governs whether actions are legitimate before execution.
+The gate evaluates the PR diff against declared authority.
+---
+## Current Status
 
-This action implements a deterministic contract between intent and change at the pull request boundary.
+Run 4 complete:
+- Authority Contract integration
+- Mutation classification layer
+- Deterministic enforcement
+- Run-scoped artifacts
+- Contract-first authority resolution
 
-It is a development wedge of Signal & Prism’s broader interpretive control plane.
-
-Interpretation isn’t inferred. It’s designed.
 ---
 
 ## License
