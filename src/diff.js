@@ -76,4 +76,16 @@ function computeDiffSummary() {
   };
 }
 
-module.exports = { computeDiffSummary };
+/**
+ * Optional helper: returns the unified diff text for mergeBase...HEAD.
+ * Keep this here if you need content_regex scanning.
+ * (Avoid parsing hunks here; keep diff.js focused.)
+ */
+function getUnifiedDiffText(mergeBase) {
+  return execSync(`git diff ${mergeBase}...HEAD`, {
+    encoding: "utf8",
+    maxBuffer: 20 * 1024 * 1024
+  });
+}
+
+module.exports = { computeDiffSummary, getUnifiedDiffText };

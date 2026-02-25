@@ -1,0 +1,63 @@
+{
+  "schema": "sp.ebi.mutation_class_catalog.v1",
+  "catalog_id": "sp.ebi.catalog.github_pr.default",
+  "catalog_version": "1.0.0",
+  "classes": [
+    {
+      "mutation_class_id": "ci.workflow.modify",
+      "class_version": "1.0.0",
+      "title": "CI workflow modification",
+      "description": "Changes to GitHub Actions workflows.",
+      "severity_default": "high",
+      "implied_authority_default": "high",
+      "matchers": [
+        {
+          "matcher_id": "ci_path",
+          "type": "path_glob",
+          "include": [".github/workflows/**"]
+        }
+      ]
+    },
+    {
+      "mutation_class_id": "dependency.production.modify",
+      "class_version": "1.0.0",
+      "title": "Production dependency modification",
+      "description": "Changes to production dependencies in package.json.",
+      "severity_default": "high",
+      "implied_authority_default": "high",
+      "matchers": [
+        {
+          "matcher_id": "pkg_json",
+          "type": "path_glob",
+          "include": ["package.json"]
+        }
+      ],
+      "extractors": [
+        {
+          "extractor_id": "deps_delta",
+          "type": "json_key_delta",
+          "paths": ["dependencies"],
+          "emit": "dependency_delta"
+        }
+      ]
+    },
+    {
+      "mutation_class_id": "secret.material.add",
+      "class_version": "1.0.0",
+      "title": "Secret material detected",
+      "description": "Potential secret/private key material added.",
+      "severity_default": "critical",
+      "implied_authority_default": "critical",
+      "matchers": [
+        {
+          "matcher_id": "private_key",
+          "type": "content_regex",
+          "pattern": "-----BEGIN (RSA|EC|OPENSSH) PRIVATE KEY-----"
+        }
+      ],
+      "limits": {
+        "exclude_paths": ["**/*.lock", "**/*.md", "**/test/**", "**/tests/**"]
+      }
+    }
+  ]
+}
