@@ -84,7 +84,30 @@ jobs:
             mv AUTHORITY_CONTRACT.json AUTHORITY_CONTRACT.json.bak
           fi
 
+          # Run gate (may exit non-zero)
+          set +e
           node -e "require('./src/gate-run4').runGate({ intentPath:'INTENT.json', registryPath: process.env.SURFACE_REGISTRY_PATH || 'surface_registry.yaml', bootstrapLockPath: process.env.BOOTSTRAP_LOCK_PATH || 'bootstrap.lock', meaningOutPath:'meaning.json' })"
+          GATE_RC=$?
+          set -e
+
+          # Copy latest .prism run outputs to stable filenames for inspection + downstream steps
+          RUN_DIR="$(ls -td .prism/runs/* 2>/dev/null | head -n 1 || true)"
+          echo "Latest run dir: $RUN_DIR"
+          if [ -n "$RUN_DIR" ] && [ -f "$RUN_DIR/meaning.json" ]; then
+            cp "$RUN_DIR/meaning.json" meaning.json
+            cp "$RUN_DIR/mutation_report.json" mutation_report.json || true
+            echo "meaning.json (first 120 lines):"
+            head -n 120 meaning.json
+          else
+            echo "No run outputs found under .prism/runs"
+          fi
+
+          # Re-emit gate exit code
+          exit $GATE_RC
+
+
+
+
           test -f meaning.json
 
       - name: Import signing key (GPG)
