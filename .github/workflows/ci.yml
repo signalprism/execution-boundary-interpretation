@@ -54,7 +54,7 @@ jobs:
           fi
 
       - name: Produce diff scope (stable)
-  shell: bash
+         shell: bash
   run: |
     set -euo pipefail
 
