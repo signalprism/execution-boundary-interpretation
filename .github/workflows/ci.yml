@@ -34,3 +34,100 @@ jobs:
 
       - name: Verify bundle
         run: test -f dist/index.js
+
+            # -------------------------------
+      # Run 4 Gate + Signature Binding
+      # -------------------------------
+
+      - name: Ensure INTENT.json exists (push fallback)
+        shell: bash
+        run: |
+          if [ ! -f "INTENT.json" ]; then
+            cat > INTENT.json <<'EOF'
+          {
+            "mode": "normal",
+            "intent": "CI run (push fallback) — no explicit intent provided",
+            "declared_authority": "low"
+          }
+          EOF
+            echo "Wrote fallback INTENT.json"
+          fi
+
+      - name: Produce diff scope (stable)
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ] && [ -n "${{ github.base_ref }}" ]; then
+            git fetch --no-tags --prune --depth=2 origin "${{ github.base_ref }}:${{ github.base_ref }}" || true
+            git diff --no-color "origin/${{ github.base_ref }}...${{ github.sha }}" > diff.txt
+          else
+            git diff --no-color "${{ github.sha }}~1...${{ github.sha }}" > diff.txt || true
+          fi
+          ls -la diff.txt || true
+
+      - name: Run Gate (runGate → meaning.json)
+        shell: bash
+        run: |
+          node -e "require('./gate-run4').runGate({ intentPath:'INTENT.json', registryPath: process.env.SURFACE_REGISTRY_PATH || 'surface_registry.yaml', bootstrapLockPath: process.env.BOOTSTRAP_LOCK_PATH || 'bootstrap.lock', meaningOutPath:'meaning.json' })"
+          test -f meaning.json
+
+      - name: Import signing key (GPG)
+        # Avoid failing on fork PRs where secrets are not available:
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false }}
+        shell: bash
+        run: |
+          echo "${{ secrets.PRISM_GPG_PRIVATE_KEY }}" | gpg --batch --yes --import
+          gpg --list-secret-keys --keyid-format LONG
+
+      - name: Canonicalize inputs (optional debug artifacts)
+        shell: bash
+        run: |
+          node scripts/canonicalize.js INTENT.json > intent.canon.json
+          node scripts/canon-diff.js diff.txt > diff.canon.txt
+
+      - name: Attach integrity hashes
+        shell: bash
+        run: |
+          node scripts/hash-and-attach-integrity.js \
+            --artifact meaning.json \
+            --intent INTENT.json \
+            --diff diff.txt \
+            --out meaning.with-integrity.json \
+            --ci-run-id "${GITHUB_RUN_ID}"
+
+      - name: Sign artifact (detached) + embed signature
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false }}
+        shell: bash
+        run: |
+          node scripts/sign-artifact.js \
+            --artifact meaning.with-integrity.json \
+            --out meaning.signed.json \
+            --sig-out artifact.sig \
+            --pubkey-out pubkey.asc \
+            --gpg-fpr "${{ secrets.PRISM_GPG_FPR }}"
+
+      - name: Verify signed contract (self-check)
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false }}
+        shell: bash
+        run: |
+          node scripts/verify-authority-contract.js \
+            --contract meaning.signed.json \
+            --intent INTENT.json \
+            --diff diff.txt \
+            --pubkey pubkey.asc
+
+      - name: Upload signed artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: prism-signed-artifacts
+          path: |
+            meaning.json
+            meaning.with-integrity.json
+            meaning.signed.json
+            artifact.sig
+            pubkey.asc
+            diff.txt
+            INTENT.json
+            mutation_report.json
+            intent.canon.json
+            diff.canon.txt
+
