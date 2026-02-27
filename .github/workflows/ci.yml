@@ -57,22 +57,68 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             BASE_SHA="${{ github.event.pull_request.base.sha }}"
             HEAD_SHA="${{ github.event.pull_request.head.sha }}"
-
-            # Ensure both commits exist locally (works even with shallow checkout)
             git fetch --no-tags --prune --depth=200 origin "$BASE_SHA"
             git fetch --no-tags --prune --depth=200 origin "$HEAD_SHA"
-
             git diff --no-color "$BASE_SHA...$HEAD_SHA" > diff.txt
-         else
-            # Push fallback: attempt diff against previous commit
+          else
             git diff --no-color "${{ github.sha }}~1...${{ github.sha }}" > diff.txt || true
-         fi
+          fi
+          ls -la diff.txt
 
-         ls -la diff.txt
+      - name: Run Gate (Run 4)
+        shell: bash
+        run: |
+          node -e "require('./gate-run4').runGate({ intentPath:'INTENT.json', registryPath: process.env.SURFACE_REGISTRY_PATH || 'surface_registry.yaml', bootstrapLockPath: process.env.BOOTSTRAP_LOCK_PATH || 'bootstrap.lock', meaningOutPath:'meaning.json' })"
+          test -f meaning.json
+
+      - name: Import signing key (GPG)
+        shell: bash
+        run: |
+          echo "${{ secrets.PRISM_GPG_PRIVATE_KEY }}" | gpg --batch --yes --import
+          gpg --list-secret-keys --keyid-format LONG
+
+      - name: Attach integrity hashes
+        shell: bash
+        run: |
+          node scripts/hash-and-attach-integrity.js \
+            --artifact meaning.json \
+            --intent INTENT.json \
+            --diff diff.txt \
+            --out meaning.with-integrity.json \
+            --ci-run-id "${GITHUB_RUN_ID}"
+
+      - name: Sign artifact
+        shell: bash
+        run: |
+          node scripts/sign-artifact.js \
+            --artifact meaning.with-integrity.json \
+            --out meaning.signed.json \
+            --sig-out artifact.sig \
+            --pubkey-out pubkey.asc \
+            --gpg-fpr "${{ secrets.PRISM_GPG_FPR }}"
+
+      - name: Verify signed contract
+        shell: bash
+        run: |
+          node scripts/verify-authority-contract.js \
+            --contract meaning.signed.json \
+            --intent INTENT.json \
+            --diff diff.txt \
+            --pubkey pubkey.asc
+
+      - name: Upload signed artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: prism-signed-artifacts
+          path: |
+            meaning.signed.json
+            artifact.sig
+            pubkey.asc
+            diff.txt
+            INTENT.json
 
       - name: Run Gate (runGate → meaning.json)
         shell: bash
