@@ -35,7 +35,7 @@ jobs:
       - name: Verify bundle
         run: test -f dist/index.js
 
-            # -------------------------------
+      # -------------------------------
       # Run 4 Gate + Signature Binding
       # -------------------------------
 
@@ -54,25 +54,25 @@ jobs:
           fi
 
       - name: Produce diff scope (stable)
-         shell: bash
-  run: |
-    set -euo pipefail
+        shell: bash
+        run: |
+          set -euo pipefail
 
-    if [ "${{ github.event_name }}" = "pull_request" ]; then
-      BASE_SHA="${{ github.event.pull_request.base.sha }}"
-      HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE_SHA="${{ github.event.pull_request.base.sha }}"
+            HEAD_SHA="${{ github.event.pull_request.head.sha }}"
 
-      # Ensure both commits exist locally (works even with shallow checkout)
-      git fetch --no-tags --prune --depth=200 origin "$BASE_SHA"
-      git fetch --no-tags --prune --depth=200 origin "$HEAD_SHA"
+            # Ensure both commits exist locally (works even with shallow checkout)
+            git fetch --no-tags --prune --depth=200 origin "$BASE_SHA"
+            git fetch --no-tags --prune --depth=200 origin "$HEAD_SHA"
 
-      git diff --no-color "$BASE_SHA...$HEAD_SHA" > diff.txt
-    else
-      # Push fallback: attempt diff against previous commit
-      git diff --no-color "${{ github.sha }}~1...${{ github.sha }}" > diff.txt || true
-    fi
+            git diff --no-color "$BASE_SHA...$HEAD_SHA" > diff.txt
+         else
+            # Push fallback: attempt diff against previous commit
+            git diff --no-color "${{ github.sha }}~1...${{ github.sha }}" > diff.txt || true
+         fi
 
-    ls -la diff.txt
+         ls -la diff.txt
 
       - name: Run Gate (runGate → meaning.json)
         shell: bash
