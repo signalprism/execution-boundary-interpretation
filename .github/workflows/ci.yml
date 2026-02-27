@@ -12,13 +12,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
       - name: Ensure origin/main exists
         shell: bash
         run: |
           git fetch --no-tags origin main
           git rev-parse origin/main
-
           
 
       - name: Skip until Node scaffold exists
@@ -127,6 +125,16 @@ jobs:
             meaning.signed.json
             artifact.sig
             pubkey.asc
+            --pubkey pubkey.asc
+
+      - name: Upload signed artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: prism-signed-artifacts
+          path: |
+            meaning.signed.json
+            artifact.sig
+            pubkey.asc
             diff.txt
             INTENT.json
 
@@ -187,13 +195,3 @@ jobs:
           name: prism-signed-artifacts
           path: |
             meaning.json
-            meaning.with-integrity.json
-            meaning.signed.json
-            artifact.sig
-            pubkey.asc
-            diff.txt
-            INTENT.json
-            mutation_report.json
-            intent.canon.json
-            diff.canon.txt
-
