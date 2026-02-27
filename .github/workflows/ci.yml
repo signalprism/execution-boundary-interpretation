@@ -79,6 +79,11 @@ jobs:
       - name: Run Gate (Run 4)
         shell: bash
         run: |
+          # Force INTENT.json to be the authority source for CI runs
+          if [ -f AUTHORITY_CONTRACT.json ]; then
+            mv AUTHORITY_CONTRACT.json AUTHORITY_CONTRACT.json.bak
+          fi
+
           node -e "require('./src/gate-run4').runGate({ intentPath:'INTENT.json', registryPath: process.env.SURFACE_REGISTRY_PATH || 'surface_registry.yaml', bootstrapLockPath: process.env.BOOTSTRAP_LOCK_PATH || 'bootstrap.lock', meaningOutPath:'meaning.json' })"
           test -f meaning.json
 
