@@ -123,7 +123,7 @@ jobs:
       - name: Run Gate (runGate → meaning.json)
         shell: bash
         run: |
-          node -e "require('./gate-run4').runGate({ intentPath:'INTENT.json', registryPath: process.env.SURFACE_REGISTRY_PATH || 'surface_registry.yaml', bootstrapLockPath: process.env.BOOTSTRAP_LOCK_PATH || 'bootstrap.lock', meaningOutPath:'meaning.json' })"
+          node -e "require('./src/gate-run4').runGate({ intentPath:'INTENT.json', registryPath: process.env.SURFACE_REGISTRY_PATH || 'surface_registry.yaml', bootstrapLockPath: process.env.BOOTSTRAP_LOCK_PATH || 'bootstrap.lock', meaningOutPath:'meaning.json' })"
           test -f meaning.json
 
       - name: Import signing key (GPG)
