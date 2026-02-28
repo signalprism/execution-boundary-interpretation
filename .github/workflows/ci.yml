@@ -207,11 +207,8 @@ jobs:
             --pubkey-out pubkey.asc \
             --gpg-fpr "${{ secrets.PRISM_GPG_FPR }}"
 
-      - name: Verify signed contract (self-check)
-        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false }}
-        shell: bash
-        run: |
       - name: Verify signed interpretation artifact
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false }}
         shell: bash
         run: |
           node scripts/verify-interpretation-artifact.js \
