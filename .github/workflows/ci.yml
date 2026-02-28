@@ -141,27 +141,6 @@ jobs:
         run: |
           echo "Skipping verify-authority-contract.js: signed file is an interpretation artifact."
 
-      - name: Upload signed artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: prism-signed-artifacts
-          path: |
-            meaning.signed.json
-            artifact.sig
-            pubkey.asc
-            --pubkey pubkey.asc
-
-      - name: Upload signed artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: prism-signed-artifacts
-          path: |
-            meaning.signed.json
-            artifact.sig
-            pubkey.asc
-            diff.txt
-            INTENT.json
-
       - name: Run Gate (runGate → meaning.json)
         shell: bash
         run: |
