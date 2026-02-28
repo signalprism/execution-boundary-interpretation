@@ -203,10 +203,6 @@ jobs:
             --pubkey-out pubkey.asc \
             --gpg-fpr "${{ secrets.PRISM_GPG_FPR }}"
 
-      - name: Verify signed artifact (temporary skip)
-        run: |
-          echo "Skipping verify-authority-contract.js: signed file is an interpretation artifact."
-
       - name: Upload signed artifacts
         if: ${{ always() }}
         uses: actions/upload-artifact@v4
