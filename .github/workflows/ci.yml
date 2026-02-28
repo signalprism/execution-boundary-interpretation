@@ -211,8 +211,11 @@ jobs:
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false }}
         shell: bash
         run: |
-          node scripts/verify-authority-contract.js \
-            --contract meaning.signed.json \
+      - name: Verify signed interpretation artifact
+        shell: bash
+        run: |
+          node scripts/verify-interpretation-artifact.js \
+            --artifact meaning.signed.json \
             --intent INTENT.json \
             --diff diff.txt \
             --pubkey pubkey.asc
