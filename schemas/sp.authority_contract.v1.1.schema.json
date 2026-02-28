@@ -1,0 +1,145 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sp.authority_contract.v1.1.schema.json",
+  "title": "Signal & Prism — Authority Contract v1.1",
+  "type": "object",
+  "additionalProperties": true,
+
+  "required": [
+    "contract_version",
+    "declared",
+    "boundary",
+    "classification",
+    "authority",
+    "gate_result",
+    "integrity"
+  ],
+
+  "properties": {
+
+    "contract_version": {
+      "type": "string",
+      "const": "sp.authority_contract.v1.1"
+    },
+
+    "declared": {
+      "type": "object",
+      "description": "Declared intent and authority assertions.",
+      "additionalProperties": true
+    },
+
+    "boundary": {
+      "type": "object",
+      "description": "Observed mutation boundary (e.g., PR diff metadata).",
+      "required": ["diff_hash"],
+      "additionalProperties": true,
+      "properties": {
+        "diff_hash": {
+          "type": "string",
+          "pattern": "^[a-fA-F0-9]{64}$"
+        }
+      }
+    },
+
+    "classification": {
+      "type": "object",
+      "description": "Deterministic classification results.",
+      "required": ["action_class"],
+      "additionalProperties": true,
+      "properties": {
+        "action_class": {
+          "type": "string"
+        }
+      }
+    },
+
+    "authority": {
+      "type": "object",
+      "description": "Inferred authority required for production execution.",
+      "required": ["authority_if_production"],
+      "additionalProperties": true,
+      "properties": {
+        "authority_if_production": {
+          "type": "string"
+        }
+      }
+    },
+
+    "gate_result": {
+      "type": "string",
+      "enum": ["allow", "limit", "deny", "warn", "review_required"]
+    },
+
+    "integrity": {
+      "type": "object",
+      "description": "Tamper-evident signature binding envelope.",
+      "required": [
+        "canonicalization",
+        "hash_algorithm",
+        "artifact_hash",
+        "intent_hash",
+        "diff_hash",
+        "signature",
+        "signing_key_id",
+        "timestamp"
+      ],
+      "additionalProperties": true,
+      "properties": {
+
+        "canonicalization": {
+          "type": "string",
+          "const": "sp.canonicalization.v1"
+        },
+
+        "hash_algorithm": {
+          "type": "string",
+          "enum": ["sha256"]
+        },
+
+        "artifact_hash": {
+          "type": "string",
+          "pattern": "^[a-fA-F0-9]{64}$"
+        },
+
+        "intent_hash": {
+          "type": "string",
+          "pattern": "^[a-fA-F0-9]{64}$"
+        },
+
+        "diff_hash": {
+          "type": "string",
+          "pattern": "^[a-fA-F0-9]{64}$"
+        },
+
+        "signature": {
+          "type": "string",
+          "minLength": 16
+        },
+
+        "signature_format": {
+          "type": "string",
+          "enum": [
+            "gpg-detached-base64",
+            "gpg-detached-ascii-armored",
+            "raw-base64",
+            "unknown"
+          ]
+        },
+
+        "signing_key_id": {
+          "type": "string",
+          "minLength": 8
+        },
+
+        "ci_run_id": {
+          "type": "string"
+        },
+
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    }
+  }
+}

@@ -2,4 +2,9 @@ node_modules/
 meaning.json
 # prevent accidental root dist rebuild noise
 /dist/tmp
-
+# Editor swap/backup files
+*.swp
+*.swo
+*.swx
+*~
+.DS_Store

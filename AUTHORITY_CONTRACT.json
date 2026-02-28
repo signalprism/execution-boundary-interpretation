@@ -32,7 +32,7 @@
   "allowed_mutation_classes": [],
 
   "escalation": {
-    "tier": "medium",
+    "tier": "high",
     "allow_escalation": false
   },
 

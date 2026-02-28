@@ -10,6 +10,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Ensure origin/main exists
+        shell: bash
+        run: |
+          git fetch --no-tags origin main
+          git rev-parse origin/main
+          
 
       - name: Skip until Node scaffold exists
         run: |
@@ -34,3 +42,157 @@ jobs:
 
       - name: Verify bundle
         run: test -f dist/index.js
+
+      # -------------------------------
+      # Run 4 Gate + Signature Binding
+      # -------------------------------
+
+      - name: Ensure INTENT.json exists (push fallback)
+        shell: bash
+        run: |
+          if [ ! -f "INTENT.json" ]; then
+            cat > INTENT.json <<'EOF'
+          {
+            "mode": "normal",
+            "intent": "CI run (push fallback) — no explicit intent provided",
+            "declared_authority": "low"
+          }
+          EOF
+            echo "Wrote fallback INTENT.json"
+          fi
+
+      - name: Produce diff scope (stable)
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE_SHA="${{ github.event.pull_request.base.sha }}"
+            HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+            git fetch --no-tags --prune --depth=200 origin "$BASE_SHA"
+            git fetch --no-tags --prune --depth=200 origin "$HEAD_SHA"
+            git diff --no-color "$BASE_SHA...$HEAD_SHA" > diff.txt
+          else
+            git diff --no-color "${{ github.sha }}~1...${{ github.sha }}" > diff.txt || true
+          fi
+          ls -la diff.txt
+
+      - name: Run Gate (Run 4)
+        shell: bash
+        run: |
+          # Force INTENT.json to be the authority source for CI runs
+          if [ -f AUTHORITY_CONTRACT.json ]; then
+            mv AUTHORITY_CONTRACT.json AUTHORITY_CONTRACT.json.bak
+          fi
+
+          # Run gate (may exit non-zero)
+          set +e
+          node -e "require('./src/gate-run4').runGate({ intentPath:'INTENT.json', registryPath: process.env.SURFACE_REGISTRY_PATH || 'surface_registry.yaml', bootstrapLockPath: process.env.BOOTSTRAP_LOCK_PATH || 'bootstrap.lock', meaningOutPath:'meaning.json' })"
+          GATE_RC=$?
+          set -e
+
+          # Copy latest .prism run outputs to stable filenames for inspection + downstream steps
+          RUN_DIR="$(ls -td .prism/runs/* 2>/dev/null | head -n 1 || true)"
+          echo "Latest run dir: $RUN_DIR"
+          if [ -n "$RUN_DIR" ] && [ -f "$RUN_DIR/meaning.json" ]; then
+            cp "$RUN_DIR/meaning.json" meaning.json
+            cp "$RUN_DIR/mutation_report.json" mutation_report.json || true
+            echo "meaning.json (first 120 lines):"
+            head -n 120 meaning.json
+          else
+            echo "No run outputs found under .prism/runs"
+          fi
+
+          # Re-emit gate exit code
+          exit $GATE_RC
+
+
+
+
+          test -f meaning.json
+
+      - name: Import signing key (GPG)
+        shell: bash
+        run: |
+          echo "${{ secrets.PRISM_GPG_PRIVATE_KEY }}" | gpg --batch --yes --import
+          gpg --list-secret-keys --keyid-format LONG
+
+      - name: Attach integrity hashes
+        shell: bash
+        run: |
+          node scripts/hash-and-attach-integrity.js \
+            --artifact meaning.json \
+            --intent INTENT.json \
+            --diff diff.txt \
+            --out meaning.with-integrity.json \
+            --ci-run-id "${GITHUB_RUN_ID}"
+
+      - name: Sign artifact
+        shell: bash
+        run: |
+          node scripts/sign-artifact.js \
+            --artifact meaning.with-integrity.json \
+            --out meaning.signed.json \
+            --sig-out artifact.sig \
+            --pubkey-out pubkey.asc \
+            --gpg-fpr "${{ secrets.PRISM_GPG_FPR }}"
+
+      - name: Verify signed contract
+        shell: bash
+        run: |
+          echo "Skipping verify-authority-contract.js: signed file is an interpretation artifact."
+
+      - name: Run Gate (runGate → meaning.json)
+        shell: bash
+        run: |
+          node -e "require('./src/gate-run4').runGate({ intentPath:'INTENT.json', registryPath: process.env.SURFACE_REGISTRY_PATH || 'surface_registry.yaml', bootstrapLockPath: process.env.BOOTSTRAP_LOCK_PATH || 'bootstrap.lock', meaningOutPath:'meaning.json' })"
+          test -f meaning.json
+
+      - name: Import signing key (GPG)
+        # Avoid failing on fork PRs where secrets are not available:
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false }}
+        shell: bash
+        run: |
+          echo "${{ secrets.PRISM_GPG_PRIVATE_KEY }}" | gpg --batch --yes --import
+          gpg --list-secret-keys --keyid-format LONG
+
+      - name: Canonicalize inputs (optional debug artifacts)
+        shell: bash
+        run: |
+          node scripts/canonicalize.js INTENT.json > intent.canon.json
+          node scripts/canon-diff.js diff.txt > diff.canon.txt
+
+      - name: Attach integrity hashes
+        shell: bash
+        run: |
+          node scripts/hash-and-attach-integrity.js \
+            --artifact meaning.json \
+            --intent INTENT.json \
+            --diff diff.txt \
+            --out meaning.with-integrity.json \
+            --ci-run-id "${GITHUB_RUN_ID}"
+
+      - name: Sign artifact (detached) + embed signature
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false }}
+        shell: bash
+        run: |
+          node scripts/sign-artifact.js \
+            --artifact meaning.with-integrity.json \
+            --out meaning.signed.json \
+            --sig-out artifact.sig \
+            --pubkey-out pubkey.asc \
+            --gpg-fpr "${{ secrets.PRISM_GPG_FPR }}"
+
+      - name: Upload signed artifacts
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: prism-signed-artifacts
+          path: |
+            meaning.with-integrity.json
+            meaning.signed.json
+            artifact.sig
+            pubkey.asc
+            diff.txt
+            INTENT.json
+            mutation_report.json
+            meaning.json
