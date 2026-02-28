@@ -207,9 +207,17 @@ jobs:
         run: |
           echo "Skipping verify-authority-contract.js: signed file is an interpretation artifact."
 
-      - name: Upload signed artifacts
+     - name: Upload signed artifacts
+        if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
           name: prism-signed-artifacts
           path: |
+            meaning.with-integrity.json
+            meaning.signed.json
+            artifact.sig
+            pubkey.asc
+            diff.txt
+            INTENT.json
+            mutation_report.json
             meaning.json
