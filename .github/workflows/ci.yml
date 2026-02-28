@@ -207,7 +207,7 @@ jobs:
         run: |
           echo "Skipping verify-authority-contract.js: signed file is an interpretation artifact."
 
-     - name: Upload signed artifacts
+      - name: Upload signed artifacts
         if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
