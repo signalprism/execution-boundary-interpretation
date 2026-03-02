@@ -4,9 +4,10 @@
  * hash-and-attach-integrity.js
  *
  * Computes:
- *  - intent_hash = sha256(CANON_INTENT(INTENT.json))
- *  - diff_hash   = sha256(CANON_DIFF(diff.txt))
- *  - artifact_hash = sha256(CANON_ARTIFACT(artifact WITHOUT integrity))
+ *  - authority_hash = sha256(CANON_JSON(AUTHORITY.json))   [preferred]
+ *  - intent_hash    = sha256(CANON_JSON(INTENT.json))      [legacy]
+ *  - diff_hash      = sha256(CANON_DIFF(diff.txt))
+ *  - artifact_hash  = sha256(CANON_ARTIFACT(artifact WITHOUT integrity))
  *
  * Writes updated artifact JSON with integrity block populated (signature fields placeholder).
  *
@@ -14,7 +15,6 @@
  */
 
 const fs = require("fs");
-const path = require("path");
 const crypto = require("crypto");
 
 function die(msg) {
@@ -42,7 +42,7 @@ function sha256Hex(buf) {
   return crypto.createHash("sha256").update(buf).digest("hex");
 }
 
-// ---------- Canonicalization: JSON (same logic as scripts/canonicalize.js) ----------
+// ---------- Canonicalization: JSON ----------
 function isPlainObject(v) {
   return v !== null && typeof v === "object" && !Array.isArray(v);
 }
@@ -74,7 +74,7 @@ function canonJsonBytesFromFile(filePath) {
   return canonJsonBytesFromObject(obj);
 }
 
-// ---------- Canonicalization: Diff (same logic as scripts/canon-diff.js) ----------
+// ---------- Canonicalization: Diff ----------
 function canonDiffBytesFromFile(filePath) {
   const raw = fs.readFileSync(filePath);
   let text = raw.toString("utf8");
@@ -108,15 +108,21 @@ function main() {
   const args = parseArgs(process.argv);
 
   const artifactPath = args.artifact;
+  const authorityPath = args.authority;
   const intentPath = args.intent;
   const diffPath = args.diff;
   const outPath = args.out;
   const ciRunId = args["ci-run-id"] || "";
 
   if (!artifactPath) die("Missing --artifact <meaning.json>");
-  if (!intentPath) die("Missing --intent <INTENT.json>");
   if (!diffPath) die("Missing --diff <diff.txt>");
   if (!outPath) die("Missing --out <output.json>");
+
+  // Exactly one of --authority or --intent must be provided
+  const hasAuthority = Boolean(authorityPath);
+  const hasIntent = Boolean(intentPath);
+  if (hasAuthority && hasIntent) die("Provide only one: --authority <AUTHORITY.json> OR --intent <INTENT.json>");
+  if (!hasAuthority && !hasIntent) die("Missing contract input: provide --authority <AUTHORITY.json> OR --intent <INTENT.json>");
 
   // Load artifact
   let artifactObj;
@@ -127,15 +133,26 @@ function main() {
   }
 
   // Compute hashes
-  const canonIntent = canonJsonBytesFromFile(intentPath);
+  let contractHashField = null;
+  let contractHashValue = null;
+
+  if (hasAuthority) {
+    const canonAuthority = canonJsonBytesFromFile(authorityPath);
+    contractHashField = "authority_hash";
+    contractHashValue = sha256Hex(canonAuthority);
+  } else {
+    const canonIntent = canonJsonBytesFromFile(intentPath);
+    contractHashField = "intent_hash";
+    contractHashValue = sha256Hex(canonIntent);
+  }
+
   const canonDiff = canonDiffBytesFromFile(diffPath);
   const canonArtifact = canonArtifactBytesExcludingIntegrity(artifactObj);
 
-  const intentHash = sha256Hex(canonIntent);
   const diffHash = sha256Hex(canonDiff);
   const artifactHash = sha256Hex(canonArtifact);
 
-  // If artifact has boundary.diff_hash, enforce it matches computed diffHash (recommended)
+  // Optional: enforce artifact boundary.diff_hash matches computed diffHash
   if (artifactObj.boundary && artifactObj.boundary.diff_hash) {
     const bd = String(artifactObj.boundary.diff_hash).toLowerCase();
     const computed = diffHash.toLowerCase();
@@ -144,28 +161,42 @@ function main() {
     }
   }
 
-  // Attach/overwrite integrity (signature to be filled by signer)
-  artifactObj.integrity = {
+  // Preserve existing signature fields if present (signer fills these)
+  const prev = isPlainObject(artifactObj.integrity) ? artifactObj.integrity : {};
+
+  // Attach/overwrite integrity
+  const integrity = {
     canonicalization: "sp.canonicalization.v1",
     hash_algorithm: "sha256",
     artifact_hash: artifactHash,
-    intent_hash: intentHash,
     diff_hash: diffHash,
 
+    // Contract hash (authority-first)
+    [contractHashField]: contractHashValue,
+
     // Signer will fill these:
-    signature: artifactObj.integrity?.signature || "",
-    signature_format: artifactObj.integrity?.signature_format || "unknown",
-    signing_key_id: artifactObj.integrity?.signing_key_id || "",
-    ci_run_id: String(ciRunId || artifactObj.integrity?.ci_run_id || ""),
-    timestamp: artifactObj.integrity?.timestamp || nowIso()
+    signature: prev.signature || "",
+    signature_format: prev.signature_format || "unknown",
+    signing_key_id: prev.signing_key_id || "",
+    ci_run_id: String(ciRunId || prev.ci_run_id || ""),
+    timestamp: prev.timestamp || nowIso(),
   };
+
+  // Optional: if you want to keep both fields during transition, you can do:
+  // - when authority is provided, also include legacy intent_hash if the artifact already had it
+  // This keeps old tooling from breaking while you migrate.
+  if (hasAuthority && typeof prev.intent_hash === "string" && prev.intent_hash.length === 64) {
+    integrity.intent_hash = prev.intent_hash;
+  }
+
+  artifactObj.integrity = integrity;
 
   fs.writeFileSync(outPath, JSON.stringify(artifactObj, null, 2) + "\n", "utf8");
 
   console.log("OK: integrity hashes computed and attached.");
-  console.log(`- intent_hash   = ${intentHash}`);
-  console.log(`- diff_hash     = ${diffHash}`);
-  console.log(`- artifact_hash = ${artifactHash}`);
+  console.log(`- ${contractHashField} = ${contractHashValue}`);
+  console.log(`- diff_hash            = ${diffHash}`);
+  console.log(`- artifact_hash         = ${artifactHash}`);
   console.log(`Wrote: ${outPath}`);
 }
 
