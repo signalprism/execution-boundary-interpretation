@@ -29923,20 +29923,22 @@ function normalizeAuthorityContract(raw, sourcePath) {
  * Prefer AUTHORITY_CONTRACT.json if present, else use INTENT.json.
  */
 function loadAuthority({ authorityPath, intentPath }) {
-  const defaultAuthority = authorityPath || process.env.AUTHORITY_CONTRACT_PATH || "AUTHORITY_CONTRACT.json";
-  const legacyIntent = intentPath || process.env.INTENT_PATH || "INTENT.json";
+  const defaultAuthority =
+    authorityPath || process.env.AUTHORITY_CONTRACT_PATH || "AUTHORITY_CONTRACT.json";
+  const legacyIntent =
+    intentPath || process.env.INTENT_PATH || "INTENT.json";
 
-  const pick =
-    exists(defaultAuthority) ? defaultAuthority :
-    exists(legacyIntent) ? legacyIntent :
-    null;
-
-  if (!pick) {
-    throw new Error(`No authority file found. Expected ${defaultAuthority} or ${legacyIntent}`);
+  if (exists(defaultAuthority)) {
+    const raw = readJsonOrThrow(defaultAuthority);
+    return normalizeAuthorityContract(raw, defaultAuthority);
   }
 
-  const raw = readJsonOrThrow(pick);
-  return normalizeAuthorityContract(raw, pick);
+  if (exists(legacyIntent)) {
+    const raw = readJsonOrThrow(legacyIntent);
+    return normalizeAuthorityContract(raw, legacyIntent);
+  }
+
+  throw new Error(`No authority file found. Expected ${defaultAuthority} or ${legacyIntent}`);
 }
 
 module.exports = { loadAuthority };
@@ -30396,7 +30398,7 @@ function runGate({ intentPath, registryPath, bootstrapLockPath, meaningOutPath }
   // Prefer AUTHORITY_CONTRACT.json, fallback to INTENT.json
   const contract = loadAuthority({
     authorityPath: process.env.AUTHORITY_CONTRACT_PATH || "AUTHORITY_CONTRACT.json",
-    intentPath: intentPath || "INTENT.json"
+    intentPath: intentPath || "AUTHORITY_CONTRACT.json"
   });
 
   console.log(`::notice::Authority source: ${contract.source_path}`);
@@ -34948,7 +34950,7 @@ async function main() {
     const intentPath =
       process.env.INTENT_PATH ||
       core.getInput("intent_path") ||
-      "INTENT.json";
+      "AUTHORITY_CONTRACT.json";
 
     const registryPath =
       process.env.REGISTRY_PATH ||

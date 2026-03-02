@@ -163,26 +163,20 @@ function normalizeAuthorityContract(raw, sourcePath) {
 function loadAuthority({ authorityPath, intentPath }) {
   const defaultAuthority =
     authorityPath || process.env.AUTHORITY_CONTRACT_PATH || "AUTHORITY_CONTRACT.json";
-
   const legacyIntent =
     intentPath || process.env.INTENT_PATH || "INTENT.json";
 
-  // Authority wins if it exists, regardless of legacy intent settings.
   if (exists(defaultAuthority)) {
     const raw = readJsonOrThrow(defaultAuthority);
     return normalizeAuthorityContract(raw, defaultAuthority);
   }
 
-  // Legacy fallback only if authority is absent.
   if (exists(legacyIntent)) {
     const raw = readJsonOrThrow(legacyIntent);
     return normalizeAuthorityContract(raw, legacyIntent);
   }
 
   throw new Error(`No authority file found. Expected ${defaultAuthority} or ${legacyIntent}`);
-}
-  const raw = readJsonOrThrow(pick);
-  return normalizeAuthorityContract(raw, pick);
 }
 
 module.exports = { loadAuthority };
