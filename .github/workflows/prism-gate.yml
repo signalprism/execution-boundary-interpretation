@@ -16,7 +16,7 @@ on:
       - "src/**"
       - "dist/**"
       - ".github/workflows/prism-gate.yml"
-      - "INTENT.json"
+      - "AUTHORITY_CONTRACT.json"
 
 jobs:
   prism:
@@ -33,7 +33,7 @@ jobs:
       - name: Run Prism Gate (local)
         uses: ./
         env:
-          INTENT_PATH: "INTENT.json"
+          INTENT_PATH: "AUTHORITY_CONTRACT.json"
           REGISTRY_PATH: ".prism/surface_registry.yaml"
           BOOTSTRAP_LOCK_PATH: ".prism/bootstrap.lock"
           MEANING_OUT_PATH: "meaning.json"
