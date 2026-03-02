@@ -418,14 +418,14 @@ function runGate({ intentPath, registryPath, bootstrapLockPath, meaningOutPath, 
 
   // ALSO write to requested output paths (CI expects these)
   // If meaningOutPath is not provided, default to ./meaning.json for compatibility.
-  const meaningOutPath = meaningOutPathArg || "meaning.json";
-  const mutationOutPath = mutationReportOutPathArg || "mutation_report.json";
+  const outMeaningPath = meaningOutPathArg || "meaning.json";
+  const outMutationPath = mutationReportOutPathArg || "mutation_report.json";
 
-  writeJson(meaningOutPath, meaning);
-  writeJson(mutationOutPath, mutationReport);
+  writeJson(outMeaningPath, meaning);
+  writeJson(outMutationPath, mutationReport);
 
-  console.log(`::notice::Wrote meaning to ${meaningOutPath}`);
-  console.log(`::notice::Wrote mutation report to ${mutationOutPath}`);
+  console.log(`::notice::Wrote meaning to ${outMeaningPath}`);
+  console.log(`::notice::Wrote mutation report to ${outMutationPath}`);
 
   // 8) Return result in the shape index.js expects
   // index.js logs these fields today :contentReference[oaicite:5]{index=5}, so keep them present.
