@@ -63,12 +63,13 @@ CodeAUTHORITY_CONTRACT.json
 
 Example:
 
-'''JSON{  
+```yaml
+JSON{  
   "mode": "normal",  
   "declared_authority": "high",  
   "scope": "ci.workflow.modify"  
 }
-'''
+```
 
 The gate never invents authority.  
 It evaluates declared authority against observed mutation classes.
@@ -114,6 +115,7 @@ Output artifact schema:
 
 Signature properties:
 
+```yaml
 JSON"integrity": {  
   "canonicalization": "sp.canonicalization.v1",  
   "hash_algorithm": "sha256",  
@@ -126,6 +128,7 @@ JSON"integrity": {
   "ci_run_id": "...",  
   "timestamp": "..."  
 }
+```
 
 Verification is performed inside CI using an ephemeral GNUPGHOME.
 
