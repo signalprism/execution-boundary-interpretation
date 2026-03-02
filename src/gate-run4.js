@@ -339,7 +339,7 @@ function runGate({ intentPath, registryPath, bootstrapLockPath, meaningOutPath }
   // Prefer AUTHORITY_CONTRACT.json, fallback to INTENT.json
   const contract = loadAuthority({
     authorityPath: process.env.AUTHORITY_CONTRACT_PATH || "AUTHORITY_CONTRACT.json",
-    intentPath: intentPath || "INTENT.json"
+    intentPath: intentPath || "AUTHORITY_CONTRACT.json"
   });
 
   console.log(`::notice::Authority source: ${contract.source_path}`);
