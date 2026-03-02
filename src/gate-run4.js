@@ -331,7 +331,7 @@ function buildMeaningArtifact({
 
 // --- Main entry ---------------------------------------------------------------
 
-function runGate({ intentPath, registryPath, bootstrapLockPath, meaningOutPath, mutationReportOutPath: mutationReportOutPathArg }) {
+function runGate({ intentPath, registryPath, bootstrapLockPath, meaningOutPath, mutationReportOutPath }) {
   // 1) Load inputs
   const intentRaw = readJsonOrThrow(intentPath);
   const intent = normalizeIntent(intentRaw);
