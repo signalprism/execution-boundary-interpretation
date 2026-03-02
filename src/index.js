@@ -6,7 +6,7 @@ async function main() {
     const intentPath =
       process.env.INTENT_PATH ||
       core.getInput("intent_path") ||
-      "INTENT.json";
+      "AUTHORITY_CONTRACT.json";
 
     const registryPath =
       process.env.REGISTRY_PATH ||

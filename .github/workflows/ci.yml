@@ -47,19 +47,44 @@ jobs:
       # Run 4 Gate + Signature Binding
       # -------------------------------
 
-      - name: Ensure INTENT.json exists (push fallback)
+      - name: Select contract source (authority-first)
         shell: bash
         run: |
-          if [ ! -f "INTENT.json" ]; then
-            cat > INTENT.json <<'EOF'
-          {
-            "mode": "normal",
-            "intent": "CI run (push fallback) — no explicit intent provided",
-            "declared_authority": "low"
-          }
-          EOF
-            echo "Wrote fallback INTENT.json"
+          set -euo pipefail
+
+          # Prefer AUTHORITY.json (new)
+          if [ -f "AUTHORITY.json" ]; then
+            echo "CONTRACT_PATH=AUTHORITY.json" >> $GITHUB_ENV
+            echo "CONTRACT_KIND=authority" >> $GITHUB_ENV
+            exit 0
           fi
+
+          # Back-compat: AUTHORITY_CONTRACT.json (current repo reality)
+          if [ -f "AUTHORITY_CONTRACT.json" ]; then
+            echo "CONTRACT_PATH=AUTHORITY_CONTRACT.json" >> $GITHUB_ENV
+            echo "CONTRACT_KIND=authority" >> $GITHUB_ENV
+            echo "WARN: Using AUTHORITY_CONTRACT.json. Consider renaming to AUTHORITY.json."
+            exit 0
+          fi
+
+          # Legacy support: INTENT.json (old)
+          if [ -f "INTENT.json" ]; then
+            echo "CONTRACT_PATH=INTENT.json" >> $GITHUB_ENV
+            echo "CONTRACT_KIND=intent" >> $GITHUB_ENV
+            echo "WARN: Using legacy INTENT.json. Migrate to AUTHORITY.json."
+            exit 0
+          fi
+
+          # No contract present
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "ERROR: Missing contract file. Provide AUTHORITY.json (preferred) or INTENT.json (legacy)."
+            exit 2
+          fi
+
+          # For push runs: do NOT invent a contract silently.
+          echo "No contract file on push; gate will be skipped."
+          echo "CONTRACT_PATH=" >> $GITHUB_ENV
+          echo "CONTRACT_KIND=none" >> $GITHUB_ENV
 
       - name: Produce diff scope (stable)
         shell: bash
@@ -79,38 +104,39 @@ jobs:
       - name: Run Gate (Run 4)
         shell: bash
         run: |
-          # Force INTENT.json to be the authority source for CI runs
-          if [ -f AUTHORITY_CONTRACT.json ]; then
-            mv AUTHORITY_CONTRACT.json AUTHORITY_CONTRACT.json.bak
+          set -euo pipefail
+
+          if [ "${CONTRACT_KIND}" = "none" ]; then
+            echo "Skipping gate (no contract on push)."
+            exit 0
           fi
 
-          # Run gate (may exit non-zero)
+          if { [ -f "AUTHORITY.json" ] || [ -f "AUTHORITY_CONTRACT.json" ]; } && [ -f "INTENT.json" ]; then
+            echo "ERROR: Authority contract present alongside INTENT.json. Remove INTENT.json."
+            exit 2
+          fi
+
           set +e
-          node -e "require('./src/gate-run4').runGate({ intentPath:'INTENT.json', registryPath: process.env.SURFACE_REGISTRY_PATH || 'surface_registry.yaml', bootstrapLockPath: process.env.BOOTSTRAP_LOCK_PATH || 'bootstrap.lock', meaningOutPath:'meaning.json' })"
+          node -e "require('./src/gate-run4').runGate({ intentPath: process.env.CONTRACT_PATH, registryPath: process.env.SURFACE_REGISTRY_PATH || 'surface_registry.yaml', bootstrapLockPath: process.env.BOOTSTRAP_LOCK_PATH || 'bootstrap.lock', meaningOutPath:'meaning.json' })"
           GATE_RC=$?
           set -e
 
-          # Copy latest .prism run outputs to stable filenames for inspection + downstream steps
-          RUN_DIR="$(ls -td .prism/runs/* 2>/dev/null | head -n 1 || true)"
-          echo "Latest run dir: $RUN_DIR"
-          if [ -n "$RUN_DIR" ] && [ -f "$RUN_DIR/meaning.json" ]; then
-            cp "$RUN_DIR/meaning.json" meaning.json
-            cp "$RUN_DIR/mutation_report.json" mutation_report.json || true
-            echo "meaning.json (first 120 lines):"
-            head -n 120 meaning.json
-          else
-            echo "No run outputs found under .prism/runs"
+          echo "Gate exit code: $GATE_RC"
+          if [ $GATE_RC -ne 0 ]; then
+            exit $GATE_RC
           fi
 
-          # Re-emit gate exit code
-          exit $GATE_RC
+          # HARD ASSERT: meaning.json must be valid JSON
+          if [ ! -s meaning.json ]; then
+            echo "ERROR: meaning.json missing or empty after gate."
+            ls -la || true
+            exit 2
+          fi
 
-
-
-
-          test -f meaning.json
+          node -e "JSON.parse(require('fs').readFileSync('meaning.json','utf8')); console.log('meaning.json is valid JSON');"
 
       - name: Import signing key (GPG)
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false }}
         shell: bash
         run: |
           echo "${{ secrets.PRISM_GPG_PRIVATE_KEY }}" | gpg --batch --yes --import
@@ -119,16 +145,38 @@ jobs:
       - name: Attach integrity hashes
         shell: bash
         run: |
-          node scripts/hash-and-attach-integrity.js \
-            --artifact meaning.json \
-            --intent INTENT.json \
-            --diff diff.txt \
-            --out meaning.with-integrity.json \
-            --ci-run-id "${GITHUB_RUN_ID}"
+          set -euo pipefail
+          if [ "${CONTRACT_KIND}" = "none" ]; then
+            echo "Skipping integrity (no contract on push)."
+            exit 0
+          fi
+
+          if [ "${CONTRACT_KIND}" = "authority" ]; then
+            node scripts/hash-and-attach-integrity.js \
+              --artifact meaning.json \
+              --authority "${CONTRACT_PATH}" \
+              --diff diff.txt \
+              --out meaning.with-integrity.json \
+              --ci-run-id "${GITHUB_RUN_ID}"
+          else
+            node scripts/hash-and-attach-integrity.js \
+              --artifact meaning.json \
+              --intent "${CONTRACT_PATH}" \
+              --diff diff.txt \
+              --out meaning.with-integrity.json \
+              --ci-run-id "${GITHUB_RUN_ID}"
+          fi
 
       - name: Sign artifact
+        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false }}
         shell: bash
         run: |
+          set -euo pipefail
+          if [ "${CONTRACT_KIND}" = "none" ]; then
+            echo "Skipping sign (no contract on push)."
+            exit 0
+          fi
+
           node scripts/sign-artifact.js \
             --artifact meaning.with-integrity.json \
             --out meaning.signed.json \
@@ -136,63 +184,44 @@ jobs:
             --pubkey-out pubkey.asc \
             --gpg-fpr "${{ secrets.PRISM_GPG_FPR }}"
 
-      - name: Verify signed contract
-        shell: bash
-        run: |
-          echo "Skipping verify-authority-contract.js: signed file is an interpretation artifact."
-
-      - name: Run Gate (runGate → meaning.json)
-        shell: bash
-        run: |
-          node -e "require('./src/gate-run4').runGate({ intentPath:'INTENT.json', registryPath: process.env.SURFACE_REGISTRY_PATH || 'surface_registry.yaml', bootstrapLockPath: process.env.BOOTSTRAP_LOCK_PATH || 'bootstrap.lock', meaningOutPath:'meaning.json' })"
-          test -f meaning.json
-
-      - name: Import signing key (GPG)
-        # Avoid failing on fork PRs where secrets are not available:
+      - name: Verify signed interpretation artifact
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false }}
         shell: bash
         run: |
-          echo "${{ secrets.PRISM_GPG_PRIVATE_KEY }}" | gpg --batch --yes --import
-          gpg --list-secret-keys --keyid-format LONG
+          set -euo pipefail
+          if [ "${CONTRACT_KIND}" = "none" ]; then
+            echo "Skipping verify (no contract on push)."
+            exit 0
+          fi
 
-      - name: Canonicalize inputs (optional debug artifacts)
+          if [ "${CONTRACT_KIND}" = "authority" ]; then
+            node scripts/verify-interpretation-artifact.js \
+              --artifact meaning.signed.json \
+              --authority "${CONTRACT_PATH}" \
+              --diff diff.txt \
+              --pubkey pubkey.asc
+          else
+            node scripts/verify-interpretation-artifact.js \
+              --artifact meaning.signed.json \
+              --intent "${CONTRACT_PATH}" \
+              --allow-intent-hash \
+              --diff diff.txt \
+              --pubkey pubkey.asc
+          fi
+
+      - name: Stage artifacts for upload
+        if: ${{ always() }}
         shell: bash
         run: |
-          node scripts/canonicalize.js INTENT.json > intent.canon.json
-          node scripts/canon-diff.js diff.txt > diff.canon.txt
-
-      - name: Attach integrity hashes
-        shell: bash
-        run: |
-          node scripts/hash-and-attach-integrity.js \
-            --artifact meaning.json \
-            --intent INTENT.json \
-            --diff diff.txt \
-            --out meaning.with-integrity.json \
-            --ci-run-id "${GITHUB_RUN_ID}"
-
-      - name: Sign artifact (detached) + embed signature
-        if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false }}
-        shell: bash
-        run: |
-          node scripts/sign-artifact.js \
-            --artifact meaning.with-integrity.json \
-            --out meaning.signed.json \
-            --sig-out artifact.sig \
-            --pubkey-out pubkey.asc \
-            --gpg-fpr "${{ secrets.PRISM_GPG_FPR }}"
+          set -euo pipefail
+          mkdir -p out_artifacts
+          cp -f meaning.with-integrity.json meaning.signed.json artifact.sig pubkey.asc diff.txt meaning.json mutation_report.json out_artifacts/ 2>/dev/null || true
+          cp -f INTENT.json out_artifacts/ 2>/dev/null || true
+          cp -f AUTHORITY.json out_artifacts/ 2>/dev/null || true
 
       - name: Upload signed artifacts
         if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
           name: prism-signed-artifacts
-          path: |
-            meaning.with-integrity.json
-            meaning.signed.json
-            artifact.sig
-            pubkey.asc
-            diff.txt
-            INTENT.json
-            mutation_report.json
-            meaning.json
+          path: out_artifacts

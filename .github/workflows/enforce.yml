@@ -16,7 +16,7 @@ jobs:
       - name: Run Execution Boundary Interpretation
         uses: ./
         with:
-          intent_path: "INTENT.json"
+          intent_path: "AUTHORITY_CONTRACT.json"
           fail_on: "scope,file_count,deletions,renames,moves"
         env:
           GITHUB_TOKEN: ${{ github.token }}

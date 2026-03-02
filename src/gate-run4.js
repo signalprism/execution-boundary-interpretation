@@ -331,7 +331,7 @@ function buildMeaningArtifact({
 
 // --- Main entry ---------------------------------------------------------------
 
-function runGate({ intentPath, registryPath, bootstrapLockPath, meaningOutPath }) {
+function runGate({ intentPath, registryPath, bootstrapLockPath, meaningOutPath, mutationReportOutPath }) {
   // 1) Load inputs
   const intentRaw = readJsonOrThrow(intentPath);
   const intent = normalizeIntent(intentRaw);
@@ -339,7 +339,7 @@ function runGate({ intentPath, registryPath, bootstrapLockPath, meaningOutPath }
   // Prefer AUTHORITY_CONTRACT.json, fallback to INTENT.json
   const contract = loadAuthority({
     authorityPath: process.env.AUTHORITY_CONTRACT_PATH || "AUTHORITY_CONTRACT.json",
-    intentPath: intentPath || "INTENT.json"
+    intentPath: intentPath || "AUTHORITY_CONTRACT.json"
   });
 
   console.log(`::notice::Authority source: ${contract.source_path}`);
@@ -379,7 +379,7 @@ function runGate({ intentPath, registryPath, bootstrapLockPath, meaningOutPath }
   mutations,
 };
 
-  // 6) Build meaning artifact and write it
+  // 6) Build meaning artifact
   const meaning = buildMeaningArtifact({
     intent,
     declaredAuthority,
@@ -392,24 +392,38 @@ function runGate({ intentPath, registryPath, bootstrapLockPath, meaningOutPath }
     mutationReport,
   });
 
-const { execSync } = require("child_process");
-const sha =
-  process.env.GITHUB_SHA ||
-  execSync("git rev-parse --short HEAD").toString().trim();
+  // 7) Write outputs
+  const { execSync } = require("child_process");
 
-const runId = `${sha}-${Date.now()}`;
-const runDir = `.prism/runs/${runId}`;
+  const sha =
+    process.env.GITHUB_SHA ||
+    execSync("git rev-parse --short HEAD").toString().trim();
 
-require("fs").mkdirSync(runDir, { recursive: true });
+  const runId = `${sha}-${Date.now()}`;
+  const runDir = `.prism/runs/${runId}`;
 
-const finalMeaningPath = `${runDir}/meaning.json`;
-const finalMutationPath = `${runDir}/mutation_report.json`;
+  fs.mkdirSync(runDir, { recursive: true });
 
-writeJson(finalMeaningPath, meaning);
-writeJson(finalMutationPath, mutationReport);
+  const finalMeaningPath = path.join(runDir, "meaning.json");
+  const finalMutationPath = path.join(runDir, "mutation_report.json");
 
-console.log(`::notice::Wrote meaning to ${finalMeaningPath}`);
-console.log(`::notice::Wrote mutation report to ${finalMutationPath}`);
+  // Always write run artifacts (forensics)
+  writeJson(finalMeaningPath, meaning);
+  writeJson(finalMutationPath, mutationReport);
+
+  console.log(`::notice::Wrote meaning to ${finalMeaningPath}`);
+  console.log(`::notice::Wrote mutation report to ${finalMutationPath}`);
+
+  // ALSO write to requested output paths (CI expects these)
+  // If meaningOutPath is not provided, default to ./meaning.json for compatibility.
+  const outMeaningPath = meaningOutPath || "meaning.json";
+  const outMutationPath = mutationReportOutPath || "mutation_report.json";
+
+  writeJson(outMeaningPath, meaning);
+  writeJson(outMutationPath, mutationReport);
+
+  console.log(`::notice::Wrote meaning to ${outMeaningPath}`);
+  console.log(`::notice::Wrote mutation report to ${outMutationPath}`);
 
   // 8) Return result in the shape index.js expects
   // index.js logs these fields today :contentReference[oaicite:5]{index=5}, so keep them present.
