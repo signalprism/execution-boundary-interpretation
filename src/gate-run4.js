@@ -394,8 +394,6 @@ function runGate({ intentPath, registryPath, bootstrapLockPath, meaningOutPath, 
 
   // 7) Write outputs
   const { execSync } = require("child_process");
-  const fs = require("fs");
-  const path = require("path");
 
   const sha =
     process.env.GITHUB_SHA ||
@@ -418,8 +416,8 @@ function runGate({ intentPath, registryPath, bootstrapLockPath, meaningOutPath, 
 
   // ALSO write to requested output paths (CI expects these)
   // If meaningOutPath is not provided, default to ./meaning.json for compatibility.
-  const outMeaningPath = meaningOutPathArg || "meaning.json";
-  const outMutationPath = mutationReportOutPathArg || "mutation_report.json";
+  const outMeaningPath = meaningOutPath || "meaning.json";
+  const outMutationPath = mutationReportOutPath || "mutation_report.json";
 
   writeJson(outMeaningPath, meaning);
   writeJson(outMutationPath, mutationReport);

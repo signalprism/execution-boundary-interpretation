@@ -30420,7 +30420,7 @@ function runGate({ intentPath, registryPath, bootstrapLockPath, meaningOutPath, 
   // 4) Load mutation catalog (default path; override via env if desired)
   const catalogPath =
     process.env.MUTATION_CATALOG_PATH ||
-    path.join(process.cwd(), "catalogs", "mutation-classes.default.v1.json");
+    __nccwpck_require__.ab + "mutation-classes.default.v1.json";
 
   const catalog = loadMutationCatalog(catalogPath);
 
@@ -30453,8 +30453,6 @@ function runGate({ intentPath, registryPath, bootstrapLockPath, meaningOutPath, 
 
   // 7) Write outputs
   const { execSync } = __nccwpck_require__(5317);
-  const fs = __nccwpck_require__(9896);
-  const path = __nccwpck_require__(6928);
 
   const sha =
     process.env.GITHUB_SHA ||
@@ -30477,8 +30475,8 @@ function runGate({ intentPath, registryPath, bootstrapLockPath, meaningOutPath, 
 
   // ALSO write to requested output paths (CI expects these)
   // If meaningOutPath is not provided, default to ./meaning.json for compatibility.
-  const outMeaningPath = meaningOutPathArg || "meaning.json";
-  const outMutationPath = mutationReportOutPathArg || "mutation_report.json";
+  const outMeaningPath = meaningOutPath || "meaning.json";
+  const outMutationPath = mutationReportOutPath || "mutation_report.json";
 
   writeJson(outMeaningPath, meaning);
   writeJson(outMutationPath, mutationReport);
