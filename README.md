@@ -1,130 +1,247 @@
 # Execution Boundary Interpretation
 
-Deterministic authority enforcement for AI-generated pull requests.
+**Authority-bound, tamper-evident mutation control for pull requests.**
+
 
 [![Prism Gate](https://github.com/signalprism/execution-boundary-interpretation/actions/workflows/prism-gate.yml/badge.svg?branch=main)](https://github.com/signalprism/execution-boundary-interpretation/actions/workflows/prism-gate.yml)
-![Version](https://img.shields.io/badge/version-v0.2.0--run4-blue)
+![Version](https://img.shields.io/badge/version-v0.3.0--run4-blue)
 
-This GitHub Action evaluates declared declared authority against the actual mutation surface of a pull request.
-It does not interpret prompts.
-It interprets diffs.
 
----
+Execution Boundary Interpretation is a GitHub Action that enforces declared authority contracts against actual repository mutations — and produces a signed interpretation artifact inside CI.
+
+No SaaS.  
+No external runtime.  
+Deterministic.  
+Fail-closed.
+
+* * *
 
 ## What It Does
 
-When a pull request runs:
-1. Computes the actual diff surface.
-2. Classifies mutations (dependency changes, workflow edits, secret material, etc.).
-3. Infers required authority from a registry.
-4. Compares required authority to declared authority.
-5. Passes or fails deterministically.
-6. Emits a structured meaning artifact for traceability.
+When a pull request is opened:
 
----
-## Authority Model
+1. Loads an **authority contract** (`AUTHORITY_CONTRACT.json`)
+    
+2. Computes the actual mutation surface from the diff
+    
+3. Classifies mutations against a registry
+    
+4. Determines required authority
+    
+5. Produces a **meaning artifact**
+    
+6. Attaches canonical integrity hashes
+    
+7. Signs the artifact (GPG, detached)
+    
+8. Verifies signature inside CI
+    
 
-Authority is resolved in this order:
-1. AUTHORITY_CONTRACT.json (preferred)
-2. INTENT.json (legacy fallback)
+If declared authority is exceeded, the PR fails.
 
-The declared authority tier is compared against the required authority implied by detected mutation classes.
+* * *
+
+## Core Model
+
+CodeAuthority Contract  
+        ↓  
+Diff → Mutation Classification  
+        ↓  
+Required Authority Inference  
+        ↓  
+Deterministic Gate Decision  
+        ↓  
+Signed Interpretation Artifact
+
+* * *
+
+## Authority Contract
+
+Root-level file:
+
+CodeAUTHORITY_CONTRACT.json
 
 Example:
 
-dependency.production.modify → required: high
-declared_authority: medium
-→ Gate fails
+JSON{  
+  "mode": "normal",  
+  "declared_authority": "high",  
+  "scope": "ci.workflow.modify"  
+}
 
----
-## Mutation Semantics
+The gate never invents authority.  
+It evaluates declared authority against observed mutation classes.
 
-Mutation classes are deterministic and registry-driven.
+Legacy `INTENT.json` is supported but deprecated.
 
-Examples:
-- dependency.production.modify
-- ci.workflow.modify
-- secret.material.add
-- runtime.behavior.modify
+* * *
 
-Each mutation class maps to a dominant action class and minimum authority requirement.
+## Deterministic Canonicalization
 
----
+Integrity hashes are computed using:
 
-## Run-Scoped Artifacts
+* Recursive key sorting
+    
+* Stable JSON serialization (no whitespace)
+    
+* Diff canonicalization (newline normalized)
+    
+* SHA-256
+    
 
-Each gate execution writes structured artifacts to:
-.prism/runs/<sha-timestamp>/
-  meaning.json
-  mutation_report.json
+Hashes included:
 
-Artifacts are not overwritten between runs.
+* `authority_hash`
+    
+* `diff_hash`
+    
+* `artifact_hash`
+    
 
-meaning.json
-Contains:
-- authority contract used
-- diff summary
-- mutation report
-- dominant action class
-- required vs declared authority
-- final decision
-- enforcement reasons (if any)
+These are bound into the final artifact before signing.
 
-mutation_report.json
-- Contains:
-- raw mutation findings
-- classification metadata
-- severity
-- implied authority
+* * *
 
-Example Output
-::notice::Authority source: AUTHORITY_CONTRACT.json
-::notice::Changed files evaluated: 1
-::notice::Mutations: dependency.production.modify(high)
-::notice::Run 4 decision: fail
-::notice::Dominant action class: dependency_change
-::notice::Authority: required=high declared=medium
-::error::Gate failed: Authority mismatch: dependency.production.modify implies high, declared medium
+## Signed Interpretation Artifact
 
----
+Output artifact schema:
 
-## Why This Exists
+* `sp.gate.meaning_artifact.v0` (current gate output)
+    
+* or `sp.interpretation_artifact.v2.1` (schema-compatible)
+    
 
-AI agents and automation systems increasingly open pull requests autonomously.
+Signature properties:
 
-We typically review what changed.
-We rarely declare what was authorized to change.
+JSON"integrity": {  
+  "canonicalization": "sp.canonicalization.v1",  
+  "hash_algorithm": "sha256",  
+  "authority_hash": "...",  
+  "diff_hash": "...",  
+  "artifact_hash": "...",  
+  "signature": "...",  
+  "signature_format": "gpg-detached-base64",  
+  "signing_key_id": "...",  
+  "ci_run_id": "...",  
+  "timestamp": "..."  
+}
 
-Execution Boundary Interpretation introduces:
+Verification is performed inside CI using an ephemeral GNUPGHOME.
 
-- explicit authority declaration
-- deterministic mutation evaluation
-- contract-bound enforcement
-- traceable interpretive artifacts
+* * *
 
-It establishes an execution boundary between proposal and action.
----
-## Minimal Usage
-Add the GitHub Action:
-- uses: signalprism/execution-boundary-interpretation@vX
+## Installation
 
-Provide either:
-- AUTHORITY_CONTRACT.json
-- or INTENT.json (legacy)
+Add to `.github/workflows/ci.yml`:
 
-The gate evaluates the PR diff against declared authority.
----
-## Current Status
+YAML- uses: signalprism/execution-boundary-interpretation@v0.2.0-run4  
+  with:  
+    intent_path: AUTHORITY_CONTRACT.json
 
-Run 4 complete:
-- Authority Contract integration
-- Mutation classification layer
-- Deterministic enforcement
-- Run-scoped artifacts
-- Contract-first authority resolution
+(“intent_path” input retained for compatibility — it now expects authority contract.)
 
----
+* * *
 
-## License
+## CI Flow (Run 4)
 
-MIT
+1. Select contract source
+    
+2. Produce stable diff
+    
+3. Run gate
+    
+4. Write `.prism/runs/<id>/meaning.json`
+    
+5. Also write `./meaning.json` (pipeline output)
+    
+6. Attach integrity hashes
+    
+7. Sign artifact
+    
+8. Verify signature
+    
+9. Upload artifacts
+    
+
+Artifacts uploaded:
+
+* `meaning.json`
+    
+* `meaning.with-integrity.json`
+    
+* `meaning.signed.json`
+    
+* `artifact.sig`
+    
+* `pubkey.asc`
+    
+* `.prism/runs/...`
+    
+
+* * *
+
+## Forensics & Provenance
+
+Every gate run writes:
+
+Code.prism/runs/<sha-timestamp>/  
+    meaning.json  
+    mutation_report.json
+
+These artifacts allow post-hoc audit and replay.
+
+* * *
+
+## No SaaS Dependency
+
+* No hosted control plane
+    
+* No external API calls
+    
+* No central database
+    
+* Works entirely within GitHub Actions
+    
+
+All authority binding and verification occurs inside CI.
+
+* * *
+
+## Security Properties
+
+* Authority must be declared explicitly.
+    
+* Authority must match mutation class requirements.
+    
+* Mutation classification is deterministic.
+    
+* Artifact integrity is cryptographically bound.
+    
+* Signature verification occurs before pipeline continuation.
+    
+* Fail-closed behavior.
+    
+
+* * *
+
+## Philosophy
+
+Most systems review _what changed_.
+
+This enforces _what was authorized to change_.
+
+Execution Boundary Interpretation ensures:
+
+> Authority is evaluated before reasoning.  
+> Legitimacy is bound before execution.  
+> Interpretation precedes automation.
+
+* * *
+
+## Status
+
+Run 4 – Authority-Bound Signature Binding  
+CI-native, deterministic, production-ready.
+
+* * *
+
