@@ -111,20 +111,29 @@ jobs:
             exit 0
           fi
 
-          # Defensive: do not allow both (avoids ambiguity)
-          if [ -f "AUTHORITY.json" ] && [ -f "INTENT.json" ]; then
-            echo "ERROR: Both AUTHORITY.json and INTENT.json present. Remove INTENT.json."
+          if { [ -f "AUTHORITY.json" ] || [ -f "AUTHORITY_CONTRACT.json" ]; } && [ -f "INTENT.json" ]; then
+            echo "ERROR: Authority contract present alongside INTENT.json. Remove INTENT.json."
             exit 2
           fi
 
-          # Run gate (may exit non-zero)
           set +e
           node -e "require('./src/gate-run4').runGate({ intentPath: process.env.CONTRACT_PATH, registryPath: process.env.SURFACE_REGISTRY_PATH || 'surface_registry.yaml', bootstrapLockPath: process.env.BOOTSTRAP_LOCK_PATH || 'bootstrap.lock', meaningOutPath:'meaning.json' })"
           GATE_RC=$?
           set -e
 
           echo "Gate exit code: $GATE_RC"
-          exit $GATE_RC
+          if [ $GATE_RC -ne 0 ]; then
+            exit $GATE_RC
+          fi
+
+          # HARD ASSERT: meaning.json must be valid JSON
+          if [ ! -s meaning.json ]; then
+            echo "ERROR: meaning.json missing or empty after gate."
+            ls -la || true
+            exit 2
+          fi
+
+          node -e "JSON.parse(require('fs').readFileSync('meaning.json','utf8')); console.log('meaning.json is valid JSON');"
 
       - name: Import signing key (GPG)
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false }}
