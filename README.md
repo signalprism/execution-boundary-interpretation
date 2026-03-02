@@ -63,11 +63,12 @@ CodeAUTHORITY_CONTRACT.json
 
 Example:
 
-JSON{  
+'''JSON{  
   "mode": "normal",  
   "declared_authority": "high",  
   "scope": "ci.workflow.modify"  
 }
+'''
 
 The gate never invents authority.  
 It evaluates declared authority against observed mutation classes.
