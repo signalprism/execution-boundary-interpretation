@@ -1,7 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 const yaml = require("js-yaml");
-const { computeCanonHashFromDisk } = require("../src/runtime/computeCanonHash");
+const { computeCanonHashFromDisk } = require("../boundary/github-action/src/runtime/computeCanonHash");
 
 function readYaml(absPath) {
   return yaml.load(fs.readFileSync(absPath, "utf8"));
@@ -14,8 +14,8 @@ function writeChecksums(outPath, files) {
 
 function main() {
   const repoRoot = process.cwd();
-  const bundleRoot = path.join(repoRoot, "canon_bundle");
-  const canonPath = path.join(bundleRoot, "canon.yaml");
+  const bundleRoot = path.join(repoRoot, "canon", "bundles", "sp.canon.devwedge", "1.0.0", "bundle");
+  const canonPath = path.join(bundleRoot, "canon.index.yaml");
 
   if (!fs.existsSync(canonPath)) throw new Error(`Missing ${canonPath}`);
 

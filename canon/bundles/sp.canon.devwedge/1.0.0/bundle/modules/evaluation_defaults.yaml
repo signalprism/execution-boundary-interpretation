@@ -1,0 +1,9 @@
+schema: sp.canon_module.v1
+
+module_id: sp.canon.devwedge.evaluation_defaults
+module_version: 0.1.0
+
+evaluation_defaults:
+  posture: advisory
+  on_unknown_action: escalate
+  on_schema_mismatch: deny

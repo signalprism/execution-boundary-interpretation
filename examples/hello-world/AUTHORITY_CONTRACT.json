@@ -1,0 +1,59 @@
+{
+  "schema": "sp.authority_contract.v1",
+  "contract_id": "ac.local.major_refactor",
+  "contract_version": "1.0.0",
+
+  "purpose": {
+    "statement": "Major refactor: restructure code and move modules without changing external behavior",
+    "bind_to_change": true
+  },
+
+  "surface_scope": {
+    "include": [
+      "boundary/**",
+      "domain-pack/**",
+      "schemas/**",
+      ".prism/**",
+      "canon/**",
+      "docs/**",
+      "examples/**",
+      "README.md",
+      "REPO_MAP.md",
+      "package.json",
+      "package-lock.json",
+      "yarn.lock",
+      "pnpm-lock.yaml",
+      ".github/workflows/**"
+    ],
+    "exclude": [
+      "infra/**",
+      "terraform/**",
+      "**/*.pem",
+      "**/*.key"
+    ]
+  },
+
+  "allowed_mutation_classes": [],
+
+  "escalation": {
+    "tier": "high",
+    "allow_escalation": false
+  },
+
+  "domain_context": {
+    "domain_pack_id": "sp.domain.devops.github_pr",
+    "domain_pack_version": "1.0.0"
+  },
+
+  "constraints": {
+    "max_files": 250,
+    "allow_deletions": true,
+    "allow_renames": true,
+    "allow_moves": true
+  },
+
+  "declared_by": {
+    "actor": "human",
+    "agent": null
+  }
+}

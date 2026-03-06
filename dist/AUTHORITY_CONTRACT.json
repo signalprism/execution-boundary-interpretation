@@ -10,11 +10,15 @@
 
   "surface_scope": {
     "include": [
-      "src/**",
-      "catalogs/**",
+      "boundary/**",
+      "domain-pack/**",
       "schemas/**",
       ".prism/**",
+      "canon/**",
+      "docs/**",
+      "examples/**",
       "README.md",
+      "REPO_MAP.md",
       "package.json",
       "package-lock.json",
       "yarn.lock",
@@ -37,9 +41,8 @@
   },
 
   "domain_context": {
-    "domain_pack_id": "sp.domain.github_pr",
-    "domain_pack_version": "1.0.0",
-    "worldview_ref": "worldviews/default.yaml"
+    "domain_pack_id": "sp.domain.devops.github_pr",
+    "domain_pack_version": "1.0.0"
   },
 
   "constraints": {

@@ -15,24 +15,26 @@ function shouldExclude(relPosix) {
   if (EXCLUDE.has(relPosix)) return true;
   if (relPosix.startsWith("artifacts/signatures/")) return true;
   if (relPosix.includes("/.git/") || relPosix.startsWith(".git/")) return true;
-  if (relPosix.endsWith("/.DS_Store") || relPosix.endsWith("Thumbs.db"))
-    return true;
+  if (relPosix.endsWith("/.DS_Store") || relPosix.endsWith("Thumbs.db")) return true;
   return false;
 }
 
 function walkFiles(rootDir) {
   const out = [];
+
   function walk(dir) {
     const entries = fs.readdirSync(dir, { withFileTypes: true });
     for (const ent of entries) {
       const abs = path.join(dir, ent.name);
-      if (ent.isDirectory()) walk(abs);
-      else if (ent.isFile()) {
+      if (ent.isDirectory()) {
+        walk(abs);
+      } else if (ent.isFile()) {
         const rel = toPosix(path.relative(rootDir, abs));
         if (!shouldExclude(rel)) out.push({ abs, rel });
       }
     }
   }
+
   walk(rootDir);
   out.sort((a, b) => Buffer.from(a.rel).compare(Buffer.from(b.rel)));
   return out;
@@ -67,7 +69,7 @@ function computeCanonHashFromDisk(bundleRoot, canonId, canonVersion) {
   }));
 
   const hashPayload = {
-    schema: "sp.canon.index.v0_1",
+    schema: "sp.canon_index.v1",
     canon_id: canonId,
     canon_version: canonVersion,
     files,
@@ -75,10 +77,7 @@ function computeCanonHashFromDisk(bundleRoot, canonId, canonVersion) {
 
   const canonHash =
     "sha256:" +
-    crypto
-      .createHash("sha256")
-      .update(canonicalJsonBytes(hashPayload))
-      .digest("hex");
+    crypto.createHash("sha256").update(canonicalJsonBytes(hashPayload)).digest("hex");
 
   return { hashPayload, canonHash, files };
 }

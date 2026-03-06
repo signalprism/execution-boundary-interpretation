@@ -2,14 +2,21 @@ const fs = require("fs");
 const path = require("path");
 const minimatch = require("minimatch");
 
-function loadCatalog() {
-  const catalogPath = path.join(process.cwd(), "catalogs/mutation-classes.default.v1.json");
+const DEFAULT_CATALOG_PATH = path.join(
+  process.cwd(),
+  "domain-pack",
+  "sp.domain.devops.github_pr",
+  "1.0.0",
+  "mutation-classes.default.v1.json"
+);
+
+function loadCatalog(catalogPath = DEFAULT_CATALOG_PATH) {
   return JSON.parse(fs.readFileSync(catalogPath, "utf8"));
 }
 
 function matchPathGlob(filePath, include = [], exclude = []) {
-  const included = include.some(g => minimatch(filePath, g, { dot: true }));
-  const excluded = exclude.some(g => minimatch(filePath, g, { dot: true }));
+  const included = include.some((g) => minimatch(filePath, g, { dot: true }));
+  const excluded = exclude.some((g) => minimatch(filePath, g, { dot: true }));
   return included && !excluded;
 }
 
@@ -18,13 +25,12 @@ function matchContentRegex(diffText, pattern) {
   return regex.test(diffText);
 }
 
-function evaluateMutations(changedFiles) {
-  const catalog = loadCatalog();
+function evaluateMutations(changedFiles, options = {}) {
+  const catalog = loadCatalog(options.catalogPath);
   const findings = [];
 
   for (const file of changedFiles) {
     for (const cls of catalog.classes) {
-
       let matched = false;
 
       for (const matcher of cls.matchers) {
@@ -63,4 +69,4 @@ function evaluateMutations(changedFiles) {
   return findings;
 }
 
-module.exports = { evaluateMutations };
+module.exports = { evaluateMutations, loadCatalog };

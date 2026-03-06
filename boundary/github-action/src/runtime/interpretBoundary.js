@@ -2,19 +2,19 @@
 // Deterministic gate runner (Run 2) — refactored for clean seams:
 // intent -> diff summary -> changed files -> mutation eval -> policy eval -> meaning artifact output
 
-const { loadAuthority } = require("./config/loadAuthority"); // adjust path if gate-run4.js sits in src/
+const { loadAuthority } = require("../config/loadAuthority"); // adjust path if interpretBoundary.js sits in src/
 const fs = require("fs");
 const path = require("path");
 
 // Existing diff summary (you already have this)
-const { computeDiffSummary } = require("./diff"); // :contentReference[oaicite:2]{index=2}
+const { computeDiffSummary } = require("../diff"); // :contentReference[oaicite:2]{index=2}
 
 // Optional: if you add getChangedFilesWithDiff to diff.js as discussed, import it here.
 // If you haven't added it yet, this file will still work using a minimal changedFiles adapter.
 let getChangedFilesWithDiff = null;
 try {
   // eslint-disable-next-line global-require
-  ({ getChangedFilesWithDiff } = require("./diff"));
+  ({ getChangedFilesWithDiff } = require("../diff"));
 } catch {
   // ok: fall back to minimal adapter
 }
@@ -331,15 +331,23 @@ function buildMeaningArtifact({
 
 // --- Main entry ---------------------------------------------------------------
 
-function runGate({ intentPath, registryPath, bootstrapLockPath, meaningOutPath, mutationReportOutPath }) {
+function interpretBoundary({ intentPath, registryPath, bootstrapLockPath, meaningOutPath, mutationReportOutPath }) {
   // 1) Load inputs
   const intentRaw = readJsonOrThrow(intentPath);
   const intent = normalizeIntent(intentRaw);
 
-  // Prefer AUTHORITY_CONTRACT.json, fallback to INTENT.json
+  // Load declared authority contract.
+  // Default to the repo example path unless overridden by env.
+  const defaultAuthorityPath = path.join(
+    process.cwd(),
+    "examples",
+    "hello-world",
+    "AUTHORITY_CONTRACT.json"
+  );
+
   const contract = loadAuthority({
-    authorityPath: process.env.AUTHORITY_CONTRACT_PATH || "AUTHORITY_CONTRACT.json",
-    intentPath: intentPath || "AUTHORITY_CONTRACT.json"
+    authorityPath: process.env.AUTHORITY_CONTRACT_PATH || defaultAuthorityPath,
+    intentPath: intentPath || defaultAuthorityPath,
   });
 
   console.log(`::notice::Authority source: ${contract.source_path}`);
@@ -349,8 +357,8 @@ function runGate({ intentPath, registryPath, bootstrapLockPath, meaningOutPath, 
     intent?.declared_authority ||
     "low";
 
-    const registryText = readTextOrNull(registryPath);
-    const bootstrapLockText = readTextOrNull(bootstrapLockPath);
+  const registryText = readTextOrNull(registryPath);
+  const bootstrapLockText = readTextOrNull(bootstrapLockPath);
 
   // 2) Compute diff summary (existing deterministic core)
   const diffSummary = computeDiffSummary();
@@ -361,7 +369,13 @@ function runGate({ intentPath, registryPath, bootstrapLockPath, meaningOutPath, 
   // 4) Load mutation catalog (default path; override via env if desired)
   const catalogPath =
     process.env.MUTATION_CATALOG_PATH ||
-    path.join(process.cwd(), "catalogs", "mutation-classes.default.v1.json");
+    path.join(
+      process.cwd(),
+      "domain-pack",
+      "sp.domain.devops.github_pr",
+      "1.0.0",
+      "mutation-classes.default.v1.json"
+    );
 
   const catalog = loadMutationCatalog(catalogPath);
 
@@ -369,15 +383,15 @@ function runGate({ intentPath, registryPath, bootstrapLockPath, meaningOutPath, 
   const mutations = evaluateMutations({ changedFiles, catalog });
   const policy = evaluatePolicy({ mutations, declaredAuthority });
 
-	  const mutationReport = {
-  schema: "sp.ebi.mutation_report.v1",
-  source: {
-    repo: process.env.GITHUB_REPOSITORY || "local/test",
-    ref: process.env.GITHUB_REF || "refs/heads/local",
-  },
-  summary: diffSummary,
-  mutations,
-};
+  const mutationReport = {
+    schema: "sp.ebi.mutation_report.v1",
+    source: {
+      repo: process.env.GITHUB_REPOSITORY || "local/test",
+      ref: process.env.GITHUB_REF || "refs/heads/local",
+    },
+    summary: diffSummary,
+    mutations,
+  };
 
   // 6) Build meaning artifact
   const meaning = buildMeaningArtifact({
@@ -415,9 +429,11 @@ function runGate({ intentPath, registryPath, bootstrapLockPath, meaningOutPath, 
   console.log(`::notice::Wrote mutation report to ${finalMutationPath}`);
 
   // ALSO write to requested output paths (CI expects these)
-  // If meaningOutPath is not provided, default to ./meaning.json for compatibility.
-  const outMeaningPath = meaningOutPath || "meaning.json";
-  const outMutationPath = mutationReportOutPath || "mutation_report.json";
+  const outMeaningPath = meaningOutPath || path.join("out", "meaning.json");
+  const outMutationPath = mutationReportOutPath || path.join("out", "mutation_report.json");
+
+  fs.mkdirSync(path.dirname(outMeaningPath), { recursive: true });
+  fs.mkdirSync(path.dirname(outMutationPath), { recursive: true });
 
   writeJson(outMeaningPath, meaning);
   writeJson(outMutationPath, mutationReport);
@@ -426,19 +442,17 @@ function runGate({ intentPath, registryPath, bootstrapLockPath, meaningOutPath, 
   console.log(`::notice::Wrote mutation report to ${outMutationPath}`);
 
   // 8) Return result in the shape index.js expects
-  // index.js logs these fields today :contentReference[oaicite:5]{index=5}, so keep them present.
-
   const dominantActionClass = inferDominantActionClassFromMutations(mutations);
   const requiredAuthority = lookupRequiredAuthority(dominantActionClass, registryText);
 
   return {
     decision: policy.decision === "pass" ? "pass" : "fail",
     reasons: policy.reasons,
-    dominant_action_class: dominantActionClass,     // TODO: preserve your existing classifier output here
-    required_authority: requiredAuthority,        // TODO: preserve your existing inferred authority here
+    dominant_action_class: dominantActionClass,
+    required_authority: requiredAuthority,
     declared_authority: declaredAuthority,
     mutation_report: mutationReport
   };
 }
 
-module.exports = { runGate };
+module.exports = { interpretBoundary };

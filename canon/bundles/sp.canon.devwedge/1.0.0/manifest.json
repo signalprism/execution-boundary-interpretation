@@ -1,0 +1,14 @@
+{
+  "schema": "sp.canon_manifest.v1",
+  "canon_id": "sp.canon.devwedge",
+  "canon_version": "0.1.0",
+  "created_at": "2026-02-22T22:10:00Z",
+  "integrity": {
+    "content_hashes_file": "artifacts/bundle.index.json",
+    "checksum_file": "artifacts/checksums.sha256",
+    "signature_policy": {
+      "require_signatures": false,
+      "accepted_signers": []
+    }
+  }
+}

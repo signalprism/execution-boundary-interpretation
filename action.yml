@@ -1,26 +1,42 @@
 name: "Execution Boundary Interpretation"
-description: "Deterministic intent + diff gate with Run 2 authority surfaces (bootstrap + normal)."
+description: "Deterministic CI execution boundary that evaluates pull request mutations against declared authority and emits a Meaning Artifact."
 author: "Signal & Prism"
+
 inputs:
   intent_path:
-    description: "Path to INTENT.json"
+    description: "Path to the declared governance input (INTENT.json or AUTHORITY_CONTRACT.json)"
     required: false
     default: "INTENT.json"
+
+  authority_contract_path:
+    description: "Path to AUTHORITY_CONTRACT.json"
+    required: false
+    default: ""
+
   registry_path:
     description: "Path to surface_registry.yaml"
     required: false
     default: ".prism/surface_registry.yaml"
+
   bootstrap_lock_path:
     description: "Path to bootstrap lock file"
     required: false
     default: ".prism/bootstrap.lock"
+
   meaning_out_path:
-    description: "Where to write meaning.json"
+    description: "Where to write the Meaning Artifact"
     required: false
-    default: "meaning.json"
+    default: "out/meaning.json"
+
+  mutation_report_out_path:
+    description: "Where to write the mutation report"
+    required: false
+    default: "out/mutation_report.json"
+
 runs:
   using: "node20"
   main: "dist/index.js"
+
 branding:
   icon: "shield"
   color: "blue"

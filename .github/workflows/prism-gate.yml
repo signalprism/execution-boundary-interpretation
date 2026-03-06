@@ -1,22 +1,21 @@
-name: Prism 
+name: Prism Gate
 
 on:
   pull_request:
     types: [opened, synchronize, reopened]
 
-  # allows you to run it manually from Actions tab
   workflow_dispatch:
 
-  # gives the badge a status on default branch
   push:
     branches: [main]
     paths:
       - ".prism/**"
-      - "canon_bundle/**"
-      - "src/**"
+      - "canon/**"
+      - "boundary/**"
       - "dist/**"
+      - "domain-pack/**"
       - ".github/workflows/prism-gate.yml"
-      - "AUTHORITY_CONTRACT.json"
+      - "examples/hello-world/**"
 
 jobs:
   prism:
@@ -33,14 +32,22 @@ jobs:
       - name: Run Prism Gate (local)
         uses: ./
         env:
-          INTENT_PATH: "AUTHORITY_CONTRACT.json"
+          INTENT_PATH: "examples/hello-world/AUTHORITY_CONTRACT.json"
           REGISTRY_PATH: ".prism/surface_registry.yaml"
           BOOTSTRAP_LOCK_PATH: ".prism/bootstrap.lock"
-          MEANING_OUT_PATH: "meaning.json"
+          MEANING_OUT_PATH: "out/meaning.json"
+          MUTATION_REPORT_OUT_PATH: "out/mutation_report.json"
 
       - name: Upload meaning artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: meaning-artifact
-          path: meaning.json
+          path: out/meaning.json
+
+      - name: Upload mutation report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mutation-report
+          path: out/mutation_report.json
