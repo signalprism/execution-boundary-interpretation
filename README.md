@@ -19,15 +19,13 @@ Pull requests cross an **execution boundary** where proposed mutations are inter
 
 ---
 
-**Quick Links**
-
-[Quick Start](#quick-start) ·
-[Architecture](#architecture) ·
-[Meaning Artifact](#meaning-artifact) ·
-[Authority Contracts](#authority-contracts) ·
-[CI Integration](#ci-integration)
-
----
+Pull Request
+↓
+Execution Boundary
+↓
+CI Enforcement
+↓
+Meaning Artifact
 
 > This repository demonstrates the DevWedge: a minimal execution boundary that interprets GitHub pull requests before CI execution.
 
