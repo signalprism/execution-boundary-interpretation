@@ -1,12 +1,12 @@
 {
   "name": "execution-boundary-interpretation",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "main": "dist/index.js",
   "scripts": {
-    "build": "ncc build src/index.js -o dist",
+    "build": "ncc build boundary/github-action/src/index.js -o dist",
     "package": "npm run build",
-    "test:local": "node src/index.js",
+    "test:local": "node boundary/github-action/src/index.js",
     "canon:index": "node tools/build-canon-index.js"
   },
   "dependencies": {

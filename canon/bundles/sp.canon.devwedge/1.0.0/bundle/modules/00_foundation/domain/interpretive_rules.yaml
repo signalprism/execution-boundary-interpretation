@@ -1,0 +1,45 @@
+schema: sp.domain.interpretive_rules.v0_1
+
+rules:
+  - rule_id: classify_action_class
+    description: "Derive dominant action_class from event payload."
+    inputs: ["event"]
+    outputs: ["semantic_interpretation.action_class"]
+    mapping:
+      github.pull_request:
+        if_files_include:
+          ".github/workflows/": "systemic"
+        default: "mutate"
+      agent.tool_call:
+        if_tool_in: ["github.create_pull_request", "github.merge_pull_request"]: "externalize"
+        default: "mutate"
+
+  - rule_id: infer_authority_required
+    description: "Map action_class to authority_required."
+    inputs: ["semantic_interpretation.action_class"]
+    outputs: ["semantic_interpretation.authority_required"]
+    authority_map:
+      read: "low"
+      mutate: "medium"
+      delete: "high"
+      externalize: "high"
+      elevate: "systemic"
+      systemic: "systemic"
+
+  - rule_id: reversibility_assessment
+    description: "Assess whether the meaningfully described change is reversible."
+    inputs: ["event"]
+    outputs: ["interpretive_signals.reversibility"]
+    heuristics:
+      systemic: "low"
+      externalize: "medium"
+      mutate: "high"
+      default: "unknown"
+
+  - rule_id: expectation_evaluation
+    description: "Produce expectation alignment and deviation indicators."
+    inputs: ["event", "declared"]
+    outputs: ["expectation_evaluation.alignment", "expectation_evaluation.deviation_signals"]
+    logic:
+      - "if action_class == systemic then deviation_signals += [scope_expansion]"
+      - "if declared.intent contains 'deps only' and files include 'src/' then deviation_signals += [unexpected_change_class]"

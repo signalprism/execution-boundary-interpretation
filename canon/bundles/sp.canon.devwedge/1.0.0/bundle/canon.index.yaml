@@ -1,0 +1,26 @@
+schema: sp.canon_index.v1
+
+canon_id: "sp.canon.devwedge"
+canon_version: "1.0.0"
+
+title: "Signal & Prism Canon — DevWedge Baseline"
+description: >
+  DevWedge Canon bundle for CI execution boundary interpretation.
+  Provides the governance spine for GitHub pull request mutation evaluation.
+
+composition:
+  layer_order:
+    - modules/00_foundation
+    - modules/10_org_overlay
+    - modules/20_repo_overlay
+
+  merge_strategy:
+    domain: "overlay_by_key"
+    prisms: "overlay_by_prism_id"
+    schemas: "highest_version_wins"
+
+defaults:
+  evaluation: "modules/evaluation_defaults.yaml"
+
+schemas:
+  interpretation_artifact: "modules/00_foundation/schemas/interpretation-artifact-v2.json"

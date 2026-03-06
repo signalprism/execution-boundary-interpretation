@@ -11,6 +11,21 @@ It interprets diffs.
 
 ---
 
+## Architecture (Canon → Domain Pack → Boundary → Artifact)
+
+This repo is a **DevWedge execution boundary**: it evaluates GitHub pull request mutations against declared authority and produces an attestable decision record.
+
+**Authority → Interpretation → Enforcement → Artifact**
+
+- **Canon (`canon/`)**: a pinned, versioned governance bundle (authority spine) loaded during interpretation.
+- **Domain Pack (`domain-pack/`)**: GitHub PR interpretation logic (mutation catalog, event model, authority mapping).
+- **Execution Boundary (`boundary/`)**: the GitHub Action that runs in CI and enforces legitimacy outcomes.
+- **Meaning Artifacts (`out/`)**: structured `meaning.json` output that records what was interpreted and why it was allowed/denied.
+
+See [`REPO_MAP.md`](./REPO_MAP.md) for a full map.
+
+---
+
 ## What It Does
 
 When a pull request runs:
@@ -122,6 +137,30 @@ Run 4 complete:
 - Deterministic enforcement
 - Run-scoped artifacts
 - Contract-first authority resolution
+
+---
+
+## Hello World: Governed AI Actions (5 minutes)
+
+This demo shows two pull requests:
+
+- **PASS**: docs-only change
+- **FAIL**: CI/workflow change (requires higher authority)
+
+### 1) Use the example inputs
+See [`examples/hello-world/`](./examples/hello-world/)
+
+- `INTENT.json`
+- `AUTHORITY_CONTRACT.json`
+
+### 2) Install the action in your workflow
+Use the workflow example in the README (or add your own). The action will emit a Meaning Artifact (default: `meaning.json`).
+
+### 3) Open a PR that edits `README.md`
+Expected: CI passes; artifact shows `authorized`.
+
+### 4) Open a PR that edits `.github/workflows/*`
+Expected: CI fails closed; artifact shows `denied` (or `conditional`) with reason.
 
 ---
 
