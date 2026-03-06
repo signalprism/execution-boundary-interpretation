@@ -17,3 +17,5 @@ diff.txt
 meaning.signed.json
 meaning.with-integrity.json
 pubkey.asc
+out/
+mutation_report.json

@@ -53,14 +53,14 @@ jobs:
           set -euo pipefail
 
           # Prefer AUTHORITY.json (new)
-          if [ -f "AUTHORITY.json" ]; then
+          if [ -f "examples/hello-world/AUTHORITY.json" ]; then
             echo "CONTRACT_PATH=AUTHORITY.json" >> $GITHUB_ENV
             echo "CONTRACT_KIND=authority" >> $GITHUB_ENV
             exit 0
           fi
 
           # Back-compat: AUTHORITY_CONTRACT.json (current repo reality)
-          if [ -f "AUTHORITY_CONTRACT.json" ]; then
+          if [ -f "examples/hello-world/AUTHORITY_CONTRACT.json" ]; then
             echo "CONTRACT_PATH=AUTHORITY_CONTRACT.json" >> $GITHUB_ENV
             echo "CONTRACT_KIND=authority" >> $GITHUB_ENV
             echo "WARN: Using AUTHORITY_CONTRACT.json. Consider renaming to AUTHORITY.json."
@@ -68,7 +68,7 @@ jobs:
           fi
 
           # Legacy support: INTENT.json (old)
-          if [ -f "INTENT.json" ]; then
+          if [ -f "examples/hello-world/INTENT.json" ]; then
             echo "CONTRACT_PATH=INTENT.json" >> $GITHUB_ENV
             echo "CONTRACT_KIND=intent" >> $GITHUB_ENV
             echo "WARN: Using legacy INTENT.json. Migrate to AUTHORITY.json."
@@ -111,13 +111,13 @@ jobs:
             exit 0
           fi
 
-          if { [ -f "AUTHORITY.json" ] || [ -f "AUTHORITY_CONTRACT.json" ]; } && [ -f "INTENT.json" ]; then
+          if { [ -f "AUTHORITY.json" ] || [ -f "examples/hello-world/AUTHORITY_CONTRACT.json" ]; } && [ -f "examples/hello-world/INTENT.json" ]; then
             echo "ERROR: Authority contract present alongside INTENT.json. Remove INTENT.json."
             exit 2
           fi
 
           set +e
-          node -e "require('./src/gate-run4').runGate({ intentPath: process.env.CONTRACT_PATH, registryPath: process.env.SURFACE_REGISTRY_PATH || 'surface_registry.yaml', bootstrapLockPath: process.env.BOOTSTRAP_LOCK_PATH || 'bootstrap.lock', meaningOutPath:'meaning.json' })"
+          node -e "require('./src/gate-run4').runGate({ intentPath: process.env.CONTRACT_PATH, registryPath: process.env.SURFACE_REGISTRY_PATH || 'surface_registry.yaml', bootstrapLockPath: process.env.BOOTSTRAP_LOCK_PATH || 'bootstrap.lock', meaningOutPath:'out/meaning.json' })"
           GATE_RC=$?
           set -e
 
