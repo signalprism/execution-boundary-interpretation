@@ -1,13 +1,114 @@
 # Execution Boundary Interpretation
 
-Deterministic authority enforcement for AI-generated pull requests.
+**Deterministic execution boundary for GitHub pull requests.**
 
-[![Prism Gate](https://github.com/signalprism/execution-boundary-interpretation/actions/workflows/prism-gate.yml/badge.svg?branch=main)](https://github.com/signalprism/execution-boundary-interpretation/actions/workflows/prism-gate.yml)
-![Version](https://img.shields.io/badge/version-v0.2.0--run4-blue)
+Interpret proposed repository mutations, evaluate required authority, and emit a signed Meaning Artifact explaining the CI decision.
 
-This GitHub Action evaluates declared declared authority against the actual mutation surface of a pull request.
-It does not interpret prompts.
-It interprets diffs.
+---
+
+![Version](https://img.shields.io/badge/version-v0.2.0-blue)
+![Node](https://img.shields.io/badge/node-20+-green)
+![License](https://img.shields.io/badge/license-Apache--2.0-blue)
+![CI](https://github.com/signalprism/execution-boundary-interpretation/actions/workflows/ci.yml/badge.svg)
+
+---
+
+Signals In → Meaning Out
+
+Pull requests cross an **execution boundary** where proposed mutations are interpreted using a pinned Canon bundle and DevOps domain pack before CI decisions are enforced.
+
+---
+
+**Quick Links**
+
+[Quick Start](#quick-start) ·
+[Architecture](#architecture) ·
+[Meaning Artifact](#meaning-artifact) ·
+[Authority Contracts](#authority-contracts) ·
+[CI Integration](#ci-integration)
+
+---
+
+> This repository demonstrates the DevWedge: a minimal execution boundary that interprets GitHub pull requests before CI execution.
+
+> A pull request crosses the execution boundary where proposed mutations are interpreted before CI decisions are enforced.
+
+Pull Request
+     │
+     ▼
+Execution Boundary Runtime
+     │
+     ▼
+Mutation Classification
+     │
+     ▼
+Authority Evaluation
+     │
+     ▼
+Meaning Artifact
+     │
+     ▼
+CI Enforcement
+
+### Step-by-Step
+
+1. **Pull Request arrives**
+    
+    GitHub provides the changed files and diff.
+    
+2. **Execution Boundary Runtime loads governance context**
+    
+    * Canon bundle
+        
+    * DevOps Domain Pack
+        
+    * Authority Contract
+        
+3. **Mutations are classified**
+    
+    Example mutation classes:
+    
+    * `ci.workflow.modify`
+        
+    * `dependency.production.modify`
+        
+    * `docs.modify`
+        
+4. **Authority is evaluated**
+    
+    The runtime compares:
+    
+    required_authority  
+           vs  
+    declared_authority
+    
+5. **Meaning Artifact is produced**
+    
+    The system emits structured interpretation artifacts:
+    
+    out/meaning.json  
+    out/mutation_report.json
+    
+6. **CI enforces the result**
+    
+    The boundary decision determines whether the CI pipeline proceeds.
+    
+
+* * *
+
+### Key Properties
+
+Deterministic  
+Same inputs always produce the same interpretation result.
+
+Governed  
+Interpretation logic is anchored in a pinned **Canon bundle**.
+
+Explainable  
+Every decision produces a **Meaning Artifact** describing what was interpreted and why.
+
+Attestable  
+Artifacts can be **signed and verified** for integrity.
 
 ---
 
