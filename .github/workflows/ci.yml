@@ -12,12 +12,12 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
       - name: Ensure origin/main exists
         shell: bash
         run: |
           git fetch --no-tags origin main
           git rev-parse origin/main
-          
 
       - name: Skip until Node scaffold exists
         run: |
@@ -38,55 +38,47 @@ jobs:
             npm install
           fi
 
-      - run: npm run package
+      - name: Build packaged action
+        run: npm run build
 
       - name: Verify bundle
         run: test -f dist/index.js
 
-      # -------------------------------
-      # Run 4 Gate + Signature Binding
-      # -------------------------------
-
-      - name: Select contract source (authority-first)
+      - name: Select contract source
         shell: bash
         run: |
           set -euo pipefail
 
-          # Prefer AUTHORITY.json (new)
           if [ -f "examples/hello-world/AUTHORITY.json" ]; then
-            echo "CONTRACT_PATH=AUTHORITY.json" >> $GITHUB_ENV
+            echo "CONTRACT_PATH=examples/hello-world/AUTHORITY.json" >> $GITHUB_ENV
             echo "CONTRACT_KIND=authority" >> $GITHUB_ENV
             exit 0
           fi
 
-          # Back-compat: AUTHORITY_CONTRACT.json (current repo reality)
           if [ -f "examples/hello-world/AUTHORITY_CONTRACT.json" ]; then
-            echo "CONTRACT_PATH=AUTHORITY_CONTRACT.json" >> $GITHUB_ENV
+            echo "CONTRACT_PATH=examples/hello-world/AUTHORITY_CONTRACT.json" >> $GITHUB_ENV
             echo "CONTRACT_KIND=authority" >> $GITHUB_ENV
             echo "WARN: Using AUTHORITY_CONTRACT.json. Consider renaming to AUTHORITY.json."
             exit 0
           fi
 
-          # Legacy support: INTENT.json (old)
           if [ -f "examples/hello-world/INTENT.json" ]; then
-            echo "CONTRACT_PATH=INTENT.json" >> $GITHUB_ENV
+            echo "CONTRACT_PATH=examples/hello-world/INTENT.json" >> $GITHUB_ENV
             echo "CONTRACT_KIND=intent" >> $GITHUB_ENV
             echo "WARN: Using legacy INTENT.json. Migrate to AUTHORITY.json."
             exit 0
           fi
 
-          # No contract present
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             echo "ERROR: Missing contract file. Provide AUTHORITY.json (preferred) or INTENT.json (legacy)."
             exit 2
           fi
 
-          # For push runs: do NOT invent a contract silently.
-          echo "No contract file on push; gate will be skipped."
+          echo "No contract file on push; boundary interpretation will be skipped."
           echo "CONTRACT_PATH=" >> $GITHUB_ENV
           echo "CONTRACT_KIND=none" >> $GITHUB_ENV
 
-      - name: Produce diff scope (stable)
+      - name: Produce diff scope
         shell: bash
         run: |
           set -euo pipefail
@@ -101,39 +93,47 @@ jobs:
           fi
           ls -la diff.txt
 
-      - name: Run Gate (Run 4)
+      - name: Run Boundary Interpretation
         shell: bash
         run: |
           set -euo pipefail
 
           if [ "${CONTRACT_KIND}" = "none" ]; then
-            echo "Skipping gate (no contract on push)."
+            echo "Skipping boundary interpretation (no contract on push)."
             exit 0
           fi
 
-          if { [ -f "AUTHORITY.json" ] || [ -f "examples/hello-world/AUTHORITY_CONTRACT.json" ]; } && [ -f "examples/hello-world/INTENT.json" ]; then
-            echo "ERROR: Authority contract present alongside INTENT.json. Remove INTENT.json."
-            exit 2
-          fi
-
           set +e
-          node -e "require('./src/gate-run4').runGate({ intentPath: process.env.CONTRACT_PATH, registryPath: process.env.SURFACE_REGISTRY_PATH || 'surface_registry.yaml', bootstrapLockPath: process.env.BOOTSTRAP_LOCK_PATH || 'bootstrap.lock', meaningOutPath:'out/meaning.json' })"
+          INTENT_PATH="${CONTRACT_PATH}" \
+          AUTHORITY_CONTRACT_PATH="${CONTRACT_PATH}" \
+          REGISTRY_PATH=".prism/surface_registry.yaml" \
+          BOOTSTRAP_LOCK_PATH=".prism/bootstrap.lock" \
+          MEANING_OUT_PATH="out/meaning.json" \
+          MUTATION_REPORT_OUT_PATH="out/mutation_report.json" \
+          node dist/index.js
           GATE_RC=$?
           set -e
 
-          echo "Gate exit code: $GATE_RC"
+          echo "Boundary exit code: $GATE_RC"
           if [ $GATE_RC -ne 0 ]; then
             exit $GATE_RC
           fi
 
-          # HARD ASSERT: meaning.json must be valid JSON
-          if [ ! -s meaning.json ]; then
-            echo "ERROR: meaning.json missing or empty after gate."
-            ls -la || true
+          if [ ! -s out/meaning.json ]; then
+            echo "ERROR: out/meaning.json missing or empty after boundary interpretation."
+            ls -la out || true
             exit 2
           fi
 
-          node -e "JSON.parse(require('fs').readFileSync('meaning.json','utf8')); console.log('meaning.json is valid JSON');"
+          node -e "JSON.parse(require('fs').readFileSync('out/meaning.json','utf8')); console.log('out/meaning.json is valid JSON');"
+
+          if [ ! -s out/mutation_report.json ]; then
+            echo "ERROR: out/mutation_report.json missing or empty after boundary interpretation."
+            ls -la out || true
+            exit 2
+          fi
+
+          node -e "JSON.parse(require('fs').readFileSync('out/mutation_report.json','utf8')); console.log('out/mutation_report.json is valid JSON');"
 
       - name: Import signing key (GPG)
         if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false }}
@@ -153,17 +153,17 @@ jobs:
 
           if [ "${CONTRACT_KIND}" = "authority" ]; then
             node scripts/hash-and-attach-integrity.js \
-              --artifact meaning.json \
+              --artifact out/meaning.json \
               --authority "${CONTRACT_PATH}" \
               --diff diff.txt \
-              --out meaning.with-integrity.json \
+              --out out/meaning.with-integrity.json \
               --ci-run-id "${GITHUB_RUN_ID}"
           else
             node scripts/hash-and-attach-integrity.js \
-              --artifact meaning.json \
+              --artifact out/meaning.json \
               --intent "${CONTRACT_PATH}" \
               --diff diff.txt \
-              --out meaning.with-integrity.json \
+              --out out/meaning.with-integrity.json \
               --ci-run-id "${GITHUB_RUN_ID}"
           fi
 
@@ -178,10 +178,10 @@ jobs:
           fi
 
           node scripts/sign-artifact.js \
-            --artifact meaning.with-integrity.json \
-            --out meaning.signed.json \
-            --sig-out artifact.sig \
-            --pubkey-out pubkey.asc \
+            --artifact out/meaning.with-integrity.json \
+            --out out/meaning.signed.json \
+            --sig-out out/artifact.sig \
+            --pubkey-out out/pubkey.asc \
             --gpg-fpr "${{ secrets.PRISM_GPG_FPR }}"
 
       - name: Verify signed interpretation artifact
@@ -196,17 +196,17 @@ jobs:
 
           if [ "${CONTRACT_KIND}" = "authority" ]; then
             node scripts/verify-interpretation-artifact.js \
-              --artifact meaning.signed.json \
+              --artifact out/meaning.signed.json \
               --authority "${CONTRACT_PATH}" \
               --diff diff.txt \
-              --pubkey pubkey.asc
+              --pubkey out/pubkey.asc
           else
             node scripts/verify-interpretation-artifact.js \
-              --artifact meaning.signed.json \
+              --artifact out/meaning.signed.json \
               --intent "${CONTRACT_PATH}" \
               --allow-intent-hash \
               --diff diff.txt \
-              --pubkey pubkey.asc
+              --pubkey out/pubkey.asc
           fi
 
       - name: Stage artifacts for upload
@@ -215,9 +215,10 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p out_artifacts
-          cp -f meaning.with-integrity.json meaning.signed.json artifact.sig pubkey.asc diff.txt meaning.json mutation_report.json out_artifacts/ 2>/dev/null || true
-          cp -f INTENT.json out_artifacts/ 2>/dev/null || true
-          cp -f AUTHORITY.json out_artifacts/ 2>/dev/null || true
+          cp -f out/meaning.json out/meaning.with-integrity.json out/meaning.signed.json out/mutation_report.json out/artifact.sig out/pubkey.asc diff.txt out_artifacts/ 2>/dev/null || true
+          cp -f examples/hello-world/INTENT.json out_artifacts/ 2>/dev/null || true
+          cp -f examples/hello-world/AUTHORITY.json out_artifacts/ 2>/dev/null || true
+          cp -f examples/hello-world/AUTHORITY_CONTRACT.json out_artifacts/ 2>/dev/null || true
 
       - name: Upload signed artifacts
         if: ${{ always() }}
