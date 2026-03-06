@@ -8,3 +8,12 @@ meaning.json
 *.swx
 *~
 .DS_Store
+# Prism local run artifacts
+.prism/runs/
+
+# Local generated interpretation/signing artifacts
+artifact.sig
+diff.txt
+meaning.signed.json
+meaning.with-integrity.json
+pubkey.asc
