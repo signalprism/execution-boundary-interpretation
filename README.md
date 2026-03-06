@@ -102,7 +102,7 @@ This repo is a **DevWedge execution boundary**: it evaluates GitHub pull request
 - **Canon (`canon/`)**: a pinned, versioned governance bundle (authority spine) loaded during interpretation.
 - **Domain Pack (`domain-pack/`)**: GitHub PR interpretation logic (mutation catalog, event model, authority mapping).
 - **Execution Boundary (`boundary/`)**: the GitHub Action that runs in CI and enforces legitimacy outcomes.
-- **Meaning Artifacts (`ou`t/`)**: structured `meaning.json` output that records what was interpreted and why it was allowed/denied.
+- **Meaning Artifacts (`out/`)**: structured `meaning.json` output that records what was interpreted and why it was allowed/denied.
 
 See [`REPO_MAP.md`](./REPO_MAP.md) for a full map.
 
