@@ -33,22 +33,9 @@ Pull requests cross an **execution boundary** where proposed mutations are inter
 
 > A pull request crosses the execution boundary where proposed mutations are interpreted before CI decisions are enforced.
 
-Pull Request
-     │
-     ▼
-Execution Boundary Runtime
-     │
-     ▼
-Mutation Classification
-     │
-     ▼
-Authority Evaluation
-     │
-     ▼
-Meaning Artifact
-     │
-     ▼
-CI Enforcement
+### Interpretation Flow
+
+**Pull Request → Execution Boundary Runtime → Mutation Classification → Authority Evaluation → Meaning Artifact → CI Enforcement**
 
 ### Step-by-Step
 
@@ -98,17 +85,13 @@ CI Enforcement
 
 ### Key Properties
 
-Deterministic  
-Same inputs always produce the same interpretation result.
+- **Deterministic: Same inputs always produce the same interpretation result.
 
-Governed  
-Interpretation logic is anchored in a pinned **Canon bundle**.
+- **Governed: Interpretation logic is anchored in a pinned **Canon bundle**.
 
-Explainable  
-Every decision produces a **Meaning Artifact** describing what was interpreted and why.
+- **Explainable: Every decision produces a **Meaning Artifact** describing what was interpreted and why.
 
-Attestable  
-Artifacts can be **signed and verified** for integrity.
+- **Attestable: Artifacts can be **signed and verified** for integrity.  
 
 ---
 
