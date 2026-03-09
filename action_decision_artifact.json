@@ -1,0 +1,39 @@
+{
+  "schema": "sp.action_decision_artifact.v1",
+  "request_id": "gha_local_1",
+  "actor": {
+    "actor_id": "triage-bot",
+    "actor_type": "ai_agent"
+  },
+  "source_signal": {
+    "surface": "github.issue.title",
+    "trust_tier": "untrusted",
+    "content_ref": "issue#42"
+  },
+  "declared_intent": {
+    "intent_type": "triage",
+    "intent_version": "1.0.0"
+  },
+  "requested_action": {
+    "action_type": "package.publish",
+    "target": "signalprism/dev-wedge",
+    "required_authority": "high",
+    "severity": "critical"
+  },
+  "decision": {
+    "result": "deny",
+    "reason_codes": [
+      "ACTOR_FORBIDDEN_ACTION"
+    ],
+    "summary": "Actor triage-bot is not permitted to perform package.publish"
+  },
+  "posture": {
+    "mode": "enforce"
+  },
+  "integrity": {
+    "canonicalization": "sp.canonicalization.v1",
+    "hash_algorithm": "sha256",
+    "artifact_hash": "6caa9e7f5a8e7901bd0f799a45c7de7a82e44132b1f2b10e0d94715f05063f29",
+    "signature": ""
+  }
+}

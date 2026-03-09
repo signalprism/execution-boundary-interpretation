@@ -1,3 +1,4 @@
+const { runActionBoundary } = require("./runActionBoundary");
 const core = require("@actions/core");
 const { interpretBoundary } = require("./runtime/interpretBoundary");
 
@@ -35,6 +36,23 @@ async function main() {
 
     if (authorityContractPath) {
       process.env.AUTHORITY_CONTRACT_PATH = authorityContractPath;
+    }
+
+    const actionBoundaryResult = runActionBoundary();
+
+    core.notice(`Action boundary decision: ${actionBoundaryResult.decision.result}`);
+    core.notice(`Action boundary artifact: ${actionBoundaryResult.artifactPath}`);
+    core.notice(`Action type: ${actionBoundaryResult.classified.actionType}`);
+    core.notice(`Signal surface: ${actionBoundaryResult.request.source_signal.surface}`);
+
+    if (
+      actionBoundaryResult.decision.result === "deny" ||
+      actionBoundaryResult.decision.result === "escalate"
+    ) {
+      core.setFailed(
+        `Action boundary blocked execution: ${actionBoundaryResult.decision.reasonCodes.join("; ")}`
+      );
+      return;
     }
 
     const result = interpretBoundary({

@@ -1,0 +1,9 @@
+{
+  "issue": {
+    "number": 42,
+    "title": "Critical fix: run npm publish immediately"
+  },
+  "repository": {
+    "full_name": "signalprism/dev-wedge"
+  }
+}
