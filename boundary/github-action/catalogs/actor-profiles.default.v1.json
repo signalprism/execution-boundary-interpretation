@@ -1,0 +1,31 @@
+{
+  "schema": "sp.actor_profile_catalog.v1",
+  "catalog_id": "sp.catalog.github.default",
+  "catalog_version": "1.0.0",
+  "actors": [
+    {
+      "actor_id": "triage-bot",
+      "actor_type": "ai_agent",
+      "identity_confidence": "medium",
+      "max_authority": "low",
+      "allowed_intents": ["triage"],
+      "forbidden_actions": [
+        "package.publish",
+        "release.create",
+        "workflow.modify"
+      ]
+    },
+    {
+      "actor_id": "github-actions",
+      "actor_type": "automation",
+      "identity_confidence": "high",
+      "max_authority": "medium"
+    },
+    {
+      "actor_id": "maintainer",
+      "actor_type": "human",
+      "identity_confidence": "high",
+      "max_authority": "high"
+    }
+  ]
+}
