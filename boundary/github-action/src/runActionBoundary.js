@@ -645,6 +645,7 @@ function runActionBoundary() {
 
   const artifactFileName = ["action", "decision", "artifact.json"].join("_");
   const artifactPath = path.resolve(process.cwd(), artifactFileName);
+
   writeJson(artifactPath, artifact);
 
   return {

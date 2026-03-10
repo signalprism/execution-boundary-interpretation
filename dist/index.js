@@ -957,6 +957,7 @@ function runActionBoundary() {
 
   const artifactFileName = ["action", "decision", "artifact.json"].join("_");
   const artifactPath = __nccwpck_require__.ab + "action_decision_artifact.json";
+
   writeJson(__nccwpck_require__.ab + "action_decision_artifact.json", artifact);
 
   return {
