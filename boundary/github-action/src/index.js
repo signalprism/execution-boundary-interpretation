@@ -55,6 +55,11 @@ async function main() {
       return;
     }
 
+    if (process.env.ACTION_BOUNDARY_ONLY === "1") {
+      core.notice("Action-boundary-only mode enabled; skipping legacy boundary runtime.");
+      return;
+    }
+
     const result = interpretBoundary({
       intentPath,
       registryPath,
