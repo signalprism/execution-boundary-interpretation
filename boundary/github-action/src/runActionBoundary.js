@@ -559,14 +559,34 @@ function emitActionDecisionArtifact(input) {
 function runActionBoundary() {
   const repoRoot = process.cwd();
 
-  const actorCatalogPath = path.join(
+  const actorCatalogFile = [
+    "actor-profiles",
+    "default",
+    "v1",
+    "json",
+  ].join(".");
+
+  const signalCatalogFile = [
+    "signal-surfaces",
+    "default",
+    "v1",
+    "json",
+  ].join(".");
+
+  const actorCatalogPath = path.resolve(
     repoRoot,
-    "boundary/github-action/catalogs/actor-profiles.default.v1.json"
+    "boundary",
+    "github-action",
+    "catalogs",
+    actorCatalogFile
   );
 
-  const signalCatalogPath = path.join(
+  const signalCatalogPath = path.resolve(
     repoRoot,
-    "boundary/github-action/catalogs/signal-surfaces.default.v1.json"
+    "boundary",
+    "github-action",
+    "catalogs",
+    signalCatalogFile
   );
 
   const actorCatalog = readJson(actorCatalogPath);
@@ -636,7 +656,3 @@ function runActionBoundary() {
     artifactPath: artifactPath,
   };
 }
-
-module.exports = {
-  runActionBoundary,
-};

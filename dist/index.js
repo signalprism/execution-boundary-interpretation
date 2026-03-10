@@ -320,7 +320,7 @@ module.exports = { readJson, readYaml, writeJson, fileExists, normalizeSlashes }
 /***/ }),
 
 /***/ 7412:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+/***/ ((__unused_webpack_module, __unused_webpack_exports, __nccwpck_require__) => {
 
 const fs = __nccwpck_require__(9896);
 const path = __nccwpck_require__(6928);
@@ -883,6 +883,20 @@ function emitActionDecisionArtifact(input) {
 function runActionBoundary() {
   const repoRoot = process.cwd();
 
+  const actorCatalogFile = [
+    "actor-profiles",
+    "default",
+    "v1",
+    "json",
+  ].join(".");
+
+  const signalCatalogFile = [
+    "signal-surfaces",
+    "default",
+    "v1",
+    "json",
+  ].join(".");
+
   const actorCatalogPath = __nccwpck_require__.ab + "actor-profiles.default.v1.json";
 
   const signalCatalogPath = __nccwpck_require__.ab + "signal-surfaces.default.v1.json";
@@ -954,10 +968,6 @@ function runActionBoundary() {
     artifactPath: __nccwpck_require__.ab + "action_decision_artifact.json",
   };
 }
-
-module.exports = {
-  runActionBoundary,
-};
 
 
 /***/ }),
