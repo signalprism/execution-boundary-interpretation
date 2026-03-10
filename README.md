@@ -8,7 +8,7 @@ Interpret signals, evaluate legitimacy, and enforce authority before CI executio
 
 * * *
 
-![Version](https://img.shields.io/badge/version-v0.2.0-blue)  
+![Version](https://img.shields.io/badge/version-v0.4.0-blue)  
 ![Node](https://img.shields.io/badge/node-20+-green)  
 ![License](https://img.shields.io/badge/license-Apache--2.0-blue)  
 ![CI](https://github.com/signalprism/execution-boundary-interpretation/actions/workflows/ci.yml/badge.svg)
