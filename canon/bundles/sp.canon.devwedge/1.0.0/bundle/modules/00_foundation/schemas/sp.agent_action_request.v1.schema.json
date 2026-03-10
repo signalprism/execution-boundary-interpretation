@@ -1,0 +1,139 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sp.agent_action_request.v1.schema.json",
+  "title": "Signal & Prism Agent Action Request v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "request_id",
+    "actor",
+    "source_signal",
+    "declared_intent",
+    "requested_action"
+  ],
+  "properties": {
+    "schema": {
+      "type": "string",
+      "const": "sp.agent_action_request.v1"
+    },
+    "request_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "actor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "actor_id",
+        "actor_type",
+        "identity_confidence"
+      ],
+      "properties": {
+        "actor_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "actor_type": {
+          "type": "string",
+          "enum": [
+            "human",
+            "service",
+            "ci",
+            "automation",
+            "ai_agent",
+            "external"
+          ]
+        },
+        "identity_confidence": {
+          "type": "string",
+          "enum": [
+            "high",
+            "medium",
+            "low",
+            "unknown"
+          ]
+        }
+      }
+    },
+    "source_signal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "surface",
+        "trust_tier"
+      ],
+      "properties": {
+        "surface": {
+          "type": "string",
+          "minLength": 1
+        },
+        "trust_tier": {
+          "type": "string",
+          "enum": [
+            "trusted",
+            "constrained",
+            "untrusted"
+          ]
+        },
+        "content_ref": {
+          "type": "string"
+        }
+      }
+    },
+    "declared_intent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "intent_type",
+        "intent_version"
+      ],
+      "properties": {
+        "intent_type": {
+          "type": "string",
+          "minLength": 1
+        },
+        "intent_version": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "requested_action": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "action_type"
+      ],
+      "properties": {
+        "action_type": {
+          "type": "string",
+          "minLength": 1
+        },
+        "target": {
+          "type": "string"
+        },
+        "required_authority": {
+          "type": "string",
+          "enum": [
+            "low",
+            "medium",
+            "high"
+          ]
+        },
+        "severity": {
+          "type": "string",
+          "enum": [
+            "low",
+            "moderate",
+            "high",
+            "critical"
+          ]
+        }
+      }
+    },
+    "context": {
+      "type": "object"
+    }
+  }
+}

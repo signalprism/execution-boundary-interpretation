@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sp.signal_surface_catalog.v1.schema.json",
+  "title": "Signal & Prism Signal Surface Catalog v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema",
+    "catalog_id",
+    "catalog_version",
+    "surfaces"
+  ],
+  "properties": {
+    "schema": {
+      "type": "string",
+      "const": "sp.signal_surface_catalog.v1"
+    },
+    "catalog_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "catalog_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "surfaces": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "surface",
+          "trust_tier"
+        ],
+        "properties": {
+          "surface": {
+            "type": "string",
+            "minLength": 1
+          },
+          "trust_tier": {
+            "type": "string",
+            "enum": [
+              "trusted",
+              "constrained",
+              "untrusted"
+            ]
+          },
+          "notes": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}
