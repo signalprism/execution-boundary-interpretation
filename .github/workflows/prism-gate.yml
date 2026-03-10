@@ -37,6 +37,8 @@ jobs:
           BOOTSTRAP_LOCK_PATH: ".prism/bootstrap.lock"
           MEANING_OUT_PATH: "out/meaning.json"
           MUTATION_REPORT_OUT_PATH: "out/mutation_report.json"
+          ACTOR_CATALOG_PATH: "boundary/github-action/catalogs/actor-profiles.default.v1.json"
+          SIGNAL_CATALOG_PATH: "boundary/github-action/catalogs/signal-surfaces.default.v1.json"
 
       - name: Upload meaning artifact
         if: always()

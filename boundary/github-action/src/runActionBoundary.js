@@ -559,35 +559,25 @@ function emitActionDecisionArtifact(input) {
 function runActionBoundary() {
   const repoRoot = process.cwd();
 
-  const actorCatalogFile = [
-    "actor-profiles",
-    "default",
-    "v1",
-    "json",
-  ].join(".");
+  const actorCatalogPath = process.env.ACTOR_CATALOG_PATH
+    ? path.resolve(repoRoot, process.env.ACTOR_CATALOG_PATH)
+    : path.resolve(
+        repoRoot,
+        "boundary",
+        "github-action",
+        "catalogs",
+        "actor-profiles.default.v1.json"
+      );
 
-  const signalCatalogFile = [
-    "signal-surfaces",
-    "default",
-    "v1",
-    "json",
-  ].join(".");
-
-  const actorCatalogPath = path.resolve(
-    repoRoot,
-    "boundary",
-    "github-action",
-    "catalogs",
-    actorCatalogFile
-  );
-
-  const signalCatalogPath = path.resolve(
-    repoRoot,
-    "boundary",
-    "github-action",
-    "catalogs",
-    signalCatalogFile
-  );
+  const signalCatalogPath = process.env.SIGNAL_CATALOG_PATH
+    ? path.resolve(repoRoot, process.env.SIGNAL_CATALOG_PATH)
+    : path.resolve(
+        repoRoot,
+        "boundary",
+        "github-action",
+        "catalogs",
+        "signal-surfaces.default.v1.json"
+      );
 
   const actorCatalog = readJson(actorCatalogPath);
   const signalCatalog = readJson(signalCatalogPath);
