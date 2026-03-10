@@ -1,6 +1,6 @@
 {
   "schema": "sp.signal_surface_catalog.v1",
-  "catalog_id": "sp.catalog.github.signals",
+  "catalog_id": "sp.catalog.github.signals.default",
   "catalog_version": "1.0.0",
   "surfaces": [
     {
@@ -17,6 +17,14 @@
     },
     {
       "surface": "github.workflow_dispatch.inputs",
+      "trust_tier": "constrained"
+    },
+    {
+      "surface": "github.repo_file.protected",
+      "trust_tier": "trusted"
+    },
+    {
+      "surface": "github.release.metadata",
       "trust_tier": "constrained"
     }
   ]
