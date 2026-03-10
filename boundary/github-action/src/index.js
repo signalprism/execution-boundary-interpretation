@@ -1,4 +1,4 @@
-const { runActionBoundary } = require("./runActionBoundary");
+const runActionBoundary = require("./runActionBoundary");
 const core = require("@actions/core");
 const { interpretBoundary } = require("./runtime/interpretBoundary");
 

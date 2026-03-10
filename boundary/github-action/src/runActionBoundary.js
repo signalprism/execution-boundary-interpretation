@@ -657,3 +657,5 @@ function runActionBoundary() {
     artifactPath: artifactPath,
   };
 }
+
+module.exports = runActionBoundary;
